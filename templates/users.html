@@ -1,0 +1,803 @@
+<!-- users.html - Complete fixed file with improved UI and direct user access -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotHost • Users</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap');
+        
+        * { font-family: 'Inter', system_ui, sans-serif; }
+        .font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+        
+        .glass {
+            background: rgba(255,255,255, 0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255, 0.06);
+        }
+        
+        .glass-card {
+            background: rgba(255,255,255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255, 0.06);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255,255,255, 0.06);
+            border-color: rgba(255,255,255, 0.12);
+            transform: translateY(-2px);
+        }
+        
+        .section-header {
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255, 0.03);
+            border: 1px solid rgba(255,255,255, 0.06);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            background: rgba(255,255,255, 0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3);
+        }
+        
+        .modern-table {
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255, 0.06);
+        }
+        .modern-table thead {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+        }
+        .modern-table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+            padding: 16px 24px;
+        }
+        .modern-table td {
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(255,255,255, 0.04);
+        }
+        .modern-table tbody tr {
+            transition: all 0.2s ease;
+        }
+        .modern-table tbody tr:hover {
+            background: rgba(255,255,255, 0.03);
+        }
+        
+        .status-pill {
+            padding: 4px 14px;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-pill::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-pill.admin { background: rgba(16, 185, 129, 0.12); color: #34d399; }
+        .status-pill.admin::before { background: #34d399; }
+        .status-pill.user { background: rgba(148, 163, 184, 0.1); color: #94a3b8; }
+        .status-pill.user::before { background: #64748b; }
+        .status-pill.expired { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+        .status-pill.expired::before { background: #f87171; }
+        .status-pill.active { background: rgba(16, 185, 129, 0.12); color: #34d399; }
+        .status-pill.active::before { background: #34d399; }
+        
+        .modal {
+            animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .nav-link {
+            transition: all 0.2s ease;
+            padding: 8px 18px;
+            border-radius: 14px;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        .nav-link:hover { background: rgba(255,255,255, 0.05); }
+        .nav-link.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+        }
+        
+        .action-btn {
+            transition: all 0.15s ease;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+        .action-btn:hover { transform: scale(1.05); }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .bot-limit-badge {
+            background: rgba(255,255,255,0.05);
+            padding: 2px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        
+        .search-input {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 10px 16px 10px 42px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            width: 100%;
+            color: #f1f5f9;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(99,102,241,0.4);
+            background: rgba(255,255,255,0.06);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+        }
+        .search-input::placeholder { color: #475569; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #818cf8, #6366f1);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+        }
+        .btn-primary:active { transform: scale(0.97); }
+        
+        .btn-outline {
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.2s ease;
+        }
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.15);
+        }
+        
+        .access-btn {
+            background: rgba(16, 185, 129, 0.08);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            transition: all 0.2s ease;
+        }
+        .access-btn:hover {
+            background: rgba(16, 185, 129, 0.15);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+        }
+        
+        .user-row {
+            cursor: default;
+            transition: all 0.2s ease;
+        }
+        .user-row:hover {
+            background: rgba(255,255,255,0.02);
+        }
+        
+        .bot-item {
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+        .bot-item:hover {
+            background: rgba(99,102,241,0.08);
+            border-color: rgba(99,102,241,0.2);
+            transform: translateX(4px);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        
+        .empty-state {
+            border: 2px dashed rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 60px 20px;
+        }
+    </style>
+</head>
+<body class="bg-[#0a0e1a] text-white min-h-screen">
+
+    <!-- Top Navigation -->
+    <nav class="border-b border-white/5 bg-[#0a0e1a]/90 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between">
+                <div class="flex items-center gap-x-8">
+                    <div class="flex items-center gap-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                            <i class="fas fa-robot text-white text-lg"></i>
+                        </div>
+                        <span class="font-display text-2xl tracking-tight">BotHost</span>
+                    </div>
+                    
+                    <div class="hidden md:flex items-center gap-x-1">
+                        <a href="{{ url_for('dashboard') }}" class="nav-link text-slate-400 hover:text-white">
+                            <i class="fas fa-chart-line mr-2"></i>Dashboard
+                        </a>
+                        <a href="{{ url_for('users_page') }}" class="nav-link active">
+                            <i class="fas fa-users mr-2"></i>Users
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-3">
+                    <div class="flex items-center gap-x-3 bg-white/5 rounded-2xl px-3 py-1.5 text-sm">
+                        <i class="fas fa-user-circle text-indigo-400 text-lg"></i>
+                        <span class="font-medium text-slate-200">{{ session.get('username', 'admin') }}</span>
+                        <span class="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full font-bold">ADMIN</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="text-slate-400 hover:text-red-400 transition px-3 py-2 rounded-xl hover:bg-red-500/10">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-2xl mx-auto px-6 lg:px-8 py-8">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
+            <div>
+                <h1 class="section-header">User Management</h1>
+                <p class="text-slate-400 mt-1.5 flex items-center gap-2">
+                    <i class="fas fa-circle text-[6px] text-emerald-400"></i>
+                    Manage all user accounts and their bots
+                </p>
+            </div>
+            <div class="flex items-center gap-x-3">
+                <button onclick="showAddUserModal()" 
+                        class="btn-primary flex items-center gap-x-2.5 px-6 py-3 rounded-2xl text-sm font-semibold text-white">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add New User</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="stat-card rounded-2xl p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.08em] text-slate-500 font-semibold">Total Users</p>
+                        <p class="text-4xl font-bold tracking-tight mt-1.5 text-white">{{ users|length }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card rounded-2xl p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.08em] text-slate-500 font-semibold">Admins</p>
+                        <p class="text-4xl font-bold tracking-tight mt-1.5 text-emerald-400">{{ users.values() | selectattr('is_admin', 'eq', true) | list | length }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                        <i class="fas fa-shield-alt text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card rounded-2xl p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.08em] text-slate-500 font-semibold">Active Users</p>
+                        <p class="text-4xl font-bold tracking-tight mt-1.5 text-sky-400">{{ users|length }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-400">
+                        <i class="fas fa-check-circle text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card rounded-2xl p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.08em] text-slate-500 font-semibold">Total Bots</p>
+                        <p class="text-4xl font-bold tracking-tight mt-1.5 text-violet-400">{{ users.values() | map(attribute='bots') | map('length') | sum }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-violet-500/10 flex items-center justify-center text-violet-400">
+                        <i class="fas fa-robot text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="mb-6">
+            <div class="relative max-w-md">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                <input type="text" id="searchUsers" placeholder="Search users..." 
+                       class="search-input" onkeyup="filterUsers()">
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="glass rounded-3xl overflow-hidden border border-white/5">
+            <div class="overflow-x-auto">
+                <table class="w-full modern-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Bot Limit</th>
+                            <th>Created</th>
+                            <th>Expires</th>
+                            <th class="text-center">Bots</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for username, data in users.items() %}
+                        <tr class="user-row" data-username="{{ username|lower }}">
+                            <td>
+                                <div class="flex items-center gap-x-3">
+                                    <div class="user-avatar">
+                                        {{ username[0]|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-white">{{ username }}</div>
+                                        <div class="text-xs text-slate-500">{{ data.created_at[:10] if data.created_at else '-' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if data.is_admin %}
+                                    <span class="status-pill admin">Admin</span>
+                                {% else %}
+                                    <span class="status-pill user">User</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="bot-limit-badge">{{ data.get('bot_limit', 5) }}</span>
+                                {% if not data.is_admin %}
+                                <button onclick="updateBotLimit('{{ username }}', {{ data.get('bot_limit', 5) }})" 
+                                        class="ml-1.5 text-slate-600 hover:text-indigo-400 transition text-[10px]">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                            <td class="text-slate-400 text-sm">{{ data.created_at[:10] if data.created_at else '-' }}</td>
+                            <td>
+                                {% set exp = data.expires_at %}
+                                {% if exp %}
+                                    {% if exp < current_time %}
+                                        <span class="status-pill expired">Expired</span>
+                                    {% else %}
+                                        <span class="status-pill active">{{ exp[:10] }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-slate-500 text-sm">Never</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="text-sm font-mono font-semibold text-slate-300">
+                                    {{ data.bots | length }} / {{ data.get('bot_limit', 5) }}
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <div class="flex items-center justify-end gap-x-1.5 flex-wrap">
+                                    <!-- Direct Access - Most important button -->
+                                    {% if data.bots %}
+                                    <button onclick="showUserBotsModal('{{ username }}', {{ data.bots | tojson }})" 
+                                            class="access-btn action-btn">
+                                        <i class="fas fa-robot"></i>
+                                        <span>Access</span>
+                                    </button>
+                                    {% endif %}
+                                    
+                                    {% if username != 'admin' %}
+                                    <button onclick="resetPassword('{{ username }}')" 
+                                            class="action-btn text-amber-400 hover:bg-amber-500/10 border border-amber-500/10 hover:border-amber-500/20"
+                                            title="Reset Password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    
+                                    <button onclick="extendDuration('{{ username }}')" 
+                                            class="action-btn text-sky-400 hover:bg-sky-500/10 border border-sky-500/10 hover:border-sky-500/20"
+                                            title="Extend Duration">
+                                        <i class="fas fa-clock"></i>
+                                    </button>
+                                    
+                                    <button onclick="deleteUser('{{ username }}')" 
+                                            class="action-btn text-red-400 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/20"
+                                            title="Delete User">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                    {% else %}
+                                    <span class="text-xs text-slate-600 bg-white/5 px-3 py-1 rounded-full border border-white/5">Protected</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if not users %}
+            <div class="empty-state text-center py-12">
+                <i class="fas fa-users text-5xl text-slate-700 mb-4"></i>
+                <p class="text-slate-400">No users found. Create your first user above.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div class="glass w-full max-w-md rounded-3xl p-8 modal border border-white/10">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold tracking-tight">Create Account</h3>
+                    <p class="text-sm text-slate-400 mt-1">Give someone access to BotHost</p>
+                </div>
+                <button onclick="hideAddUserModal()" class="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="text-xs uppercase tracking-[0.08em] text-slate-400 block mb-1.5 font-semibold">Username</label>
+                    <input id="newUsername" type="text" 
+                           class="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-white placeholder-slate-600" 
+                           placeholder="e.g. mukeshdev">
+                </div>
+                <div>
+                    <label class="text-xs uppercase tracking-[0.08em] text-slate-400 block mb-1.5 font-semibold">Password</label>
+                    <input id="newPassword" type="password" 
+                           class="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-white placeholder-slate-600" 
+                           placeholder="Strong password">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs uppercase tracking-[0.08em] text-slate-400 block mb-1.5 font-semibold">Duration (Days)</label>
+                        <input id="durationDays" type="number" value="30" 
+                               class="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-white">
+                    </div>
+                    <div>
+                        <label class="text-xs uppercase tracking-[0.08em] text-slate-400 block mb-1.5 font-semibold">Bot Limit</label>
+                        <input id="botLimit" type="number" value="5" min="1" 
+                               class="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-white">
+                    </div>
+                </div>
+                <div class="flex items-center gap-x-3 pt-1">
+                    <input type="checkbox" id="isAdminCheck" class="w-4 h-4 accent-indigo-500 rounded">
+                    <label for="isAdminCheck" class="text-sm text-slate-300 cursor-pointer">Give Admin privileges</label>
+                </div>
+            </div>
+            
+            <div class="flex gap-x-3 mt-8">
+                <button onclick="hideAddUserModal()" 
+                        class="flex-1 py-3.5 text-sm font-medium border border-white/10 hover:bg-white/5 transition rounded-2xl">
+                    Cancel
+                </button>
+                <button onclick="addNewUser()" 
+                        class="flex-1 py-3.5 text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition rounded-2xl">
+                    <i class="fas fa-plus mr-2"></i>Create
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Bots Modal - Direct Access -->
+    <div id="userBotsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div class="glass w-full max-w-lg rounded-3xl p-8 modal border border-white/10">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold tracking-tight" id="userBotsTitle">User's Bots</h3>
+                    <p class="text-sm text-slate-400 mt-1" id="userBotsSubtitle">Click any bot to access its server panel</p>
+                </div>
+                <button onclick="hideUserBotsModal()" class="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="userBotsList" class="max-h-[340px] overflow-auto space-y-2.5 pr-1">
+                <!-- Dynamic -->
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-white/5 text-center text-xs text-slate-500">
+                <i class="fas fa-arrow-right mr-2"></i>Click a bot to open its server panel
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Bot Limit Modal -->
+    <div id="updateLimitModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div class="glass w-full max-w-sm rounded-3xl p-8 modal border border-white/10">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-xl font-bold tracking-tight">Update Bot Limit</h3>
+                    <p class="text-sm text-slate-400 mt-1" id="updateLimitUser"></p>
+                </div>
+                <button onclick="hideUpdateLimitModal()" class="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div>
+                <label class="text-xs uppercase tracking-[0.08em] text-slate-400 block mb-1.5 font-semibold">New Limit</label>
+                <input id="newBotLimit" type="number" value="5" min="1" 
+                       class="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-white">
+            </div>
+            
+            <div class="flex gap-x-3 mt-6">
+                <button onclick="hideUpdateLimitModal()" 
+                        class="flex-1 py-3.5 text-sm font-medium border border-white/10 hover:bg-white/5 transition rounded-2xl">
+                    Cancel
+                </button>
+                <button onclick="saveBotLimit()" 
+                        class="flex-1 py-3.5 text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition rounded-2xl">
+                    Update
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLimitUser = null;
+        
+        // Search filter
+        function filterUsers() {
+            const query = document.getElementById('searchUsers').value.toLowerCase();
+            document.querySelectorAll('.user-row').forEach(row => {
+                const username = row.dataset.username || '';
+                row.style.display = username.includes(query) ? '' : 'none';
+            });
+        }
+        
+        // Add User
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+            document.getElementById('addUserModal').classList.add('flex');
+        }
+        
+        function hideAddUserModal() {
+            const modal = document.getElementById('addUserModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        async function addNewUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newPassword').value.trim();
+            const duration = parseInt(document.getElementById('durationDays').value) || 30;
+            const botLimit = parseInt(document.getElementById('botLimit').value) || 5;
+            const isAdmin = document.getElementById('isAdminCheck').checked;
+            
+            if (!username || !password) {
+                alert('Username and password are required');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/admin/user/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, is_admin: isAdmin, duration_days: duration, bot_limit: botLimit })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to create user');
+                }
+            } catch(e) {
+                alert('Network error');
+            }
+        }
+        
+        // User Bots Modal - Direct Access
+        function showUserBotsModal(username, botIds) {
+            const modal = document.getElementById('userBotsModal');
+            const list = document.getElementById('userBotsList');
+            const title = document.getElementById('userBotsTitle');
+            const subtitle = document.getElementById('userBotsSubtitle');
+            
+            title.textContent = `${username}'s Bots`;
+            subtitle.textContent = `${botIds.length} bot(s) • Click to access`;
+            list.innerHTML = '';
+            
+            if (!botIds || botIds.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-10 text-slate-500">
+                        <i class="fas fa-robot text-4xl mb-3 opacity-30"></i>
+                        <p class="text-sm">No bots created yet</p>
+                        <p class="text-xs text-slate-600 mt-1">User hasn't deployed any bots</p>
+                    </div>
+                `;
+            } else {
+                botIds.forEach(botId => {
+                    const div = document.createElement('div');
+                    div.className = 'bot-item flex items-center justify-between bg-white/5 hover:bg-white/10 px-5 py-4 rounded-2xl transition cursor-pointer border border-white/5';
+                    div.innerHTML = `
+                        <div class="flex items-center gap-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm text-white">${botId}</div>
+                                <div class="text-[10px] text-slate-500">Click to open server panel</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-x-2">
+                            <span class="text-xs px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-medium">
+                                <i class="fas fa-arrow-right mr-1"></i>Open
+                            </span>
+                        </div>
+                    `;
+                    div.onclick = () => { window.location.href = `/server/${botId}`; };
+                    list.appendChild(div);
+                });
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        function hideUserBotsModal() {
+            const modal = document.getElementById('userBotsModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        // Update Bot Limit
+        function updateBotLimit(username, currentLimit) {
+            currentLimitUser = username;
+            document.getElementById('updateLimitUser').textContent = `User: ${username}`;
+            document.getElementById('newBotLimit').value = currentLimit || 5;
+            document.getElementById('updateLimitModal').classList.remove('hidden');
+            document.getElementById('updateLimitModal').classList.add('flex');
+        }
+        
+        function hideUpdateLimitModal() {
+            const modal = document.getElementById('updateLimitModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            currentLimitUser = null;
+        }
+        
+        async function saveBotLimit() {
+            if (!currentLimitUser) return;
+            const newLimit = parseInt(document.getElementById('newBotLimit').value) || 5;
+            if (newLimit < 1) {
+                alert('Bot limit must be at least 1');
+                return;
+            }
+            try {
+                const res = await fetch(`/api/admin/user/${currentLimitUser}/update-limit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bot_limit: newLimit })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to update limit');
+                }
+            } catch(e) {
+                alert('Network error');
+            }
+        }
+        
+        // Reset Password
+        async function resetPassword(username) {
+            const newPass = prompt(`Enter new password for ${username}:`);
+            if (!newPass) return;
+            try {
+                const res = await fetch(`/api/admin/user/${username}/reset`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: newPass })
+                });
+                const data = await res.json();
+                alert(data.success ? 'Password reset successfully!' : data.error || 'Failed');
+            } catch(e) {
+                alert('Network error');
+            }
+        }
+        
+        // Extend Duration
+        async function extendDuration(username) {
+            const days = prompt(`Extend ${username} by how many days?`, '30');
+            if (!days) return;
+            try {
+                const res = await fetch(`/api/admin/user/${username}/extend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ days: parseInt(days) })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Duration extended successfully!');
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed');
+                }
+            } catch(e) {
+                alert('Network error');
+            }
+        }
+        
+        // Delete User
+        async function deleteUser(username) {
+            if (!confirm(`Delete user "${username}" and ALL their bots? This cannot be undone.`)) return;
+            try {
+                const res = await fetch(`/api/admin/user/${username}/delete`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Failed to delete');
+                }
+            } catch(e) {
+                alert('Network error');
+            }
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                    if (!modal.classList.contains('hidden')) {
+                        modal.classList.add('hidden');
+                        modal.classList.remove('flex');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
