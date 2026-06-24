@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotHost • {{ bot.name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 600; }
+        .glass { background: rgba(255,255,255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .section-header { font-size: 1.5rem; line-height: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+        
+        .tab-active { border-bottom: 3px solid #6366f1; color: white; font-weight: 600; }
+        
+        .file-row { transition: background .1s ease; }
+        .file-row:hover { background: rgba(255,255,255,.04); }
+        
+        .log-container { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        
+        .status-dot { animation: ping 2s cubic-bezier(0,0,0.2,1) infinite; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <!-- Top bar -->
+    <div class="border-b border-white/10 bg-slate-950/90 backdrop-blur-xl sticky top-0 z-40">
+        <div class="max-w-screen-2xl mx-auto px-8 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-x-4">
+                <a href="{{ url_for('dashboard') }}" class="flex items-center text-sm text-slate-400 hover:text-white transition">
+                    <i class="fas fa-arrow-left mr-2"></i> 
+                    <span>Back to Dashboard</span>
+                </a>
+                <div class="h-3 w-px bg-white/10"></div>
+                <div class="flex items-center gap-x-3">
+                    <div class="font-semibold text-xl tracking-tight">{{ bot.name }}</div>
+                    <div class="text-[10px] px-2.5 py-px rounded bg-white/10 font-mono text-slate-400">{{ bot.id }}</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-2 text-sm">
+                <div class="flex items-center gap-x-2 px-3 py-1.5 bg-white/5 rounded-2xl text-xs">
+                    {% if bot.status == 'running' %}
+                        <div class="flex items-center text-emerald-400"><div class="w-2 h-2 bg-emerald-400 rounded-full status-dot mr-1.5"></div> LIVE</div>
+                    {% else %}
+                        <div class="text-slate-400">STOPPED</div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex gap-x-1">
+                    {% if bot.status == 'running' %}
+                        <button onclick="controlBot('stop')" class="px-4 py-1.5 text-xs bg-red-600 hover:bg-red-500 transition rounded-2xl flex items-center gap-x-1"><i class="fas fa-stop fa-fw"></i> <span>Stop</span></button>
+                        <button onclick="controlBot('restart')" class="px-4 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 transition rounded-2xl flex items-center gap-x-1"><i class="fas fa-redo fa-fw"></i> <span>Restart</span></button>
+                    {% else %}
+                        <button onclick="controlBot('start')" class="px-5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 transition rounded-2xl flex items-center gap-x-1"><i class="fas fa-play fa-fw"></i> <span>Start Bot</span></button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-screen-2xl mx-auto px-8 pt-8">
+        <!-- Tabs -->
+        <div class="flex border-b border-white/10 mb-6">
+            <button onclick="switchTab(0)" class="tab px-7 py-3 tab-active flex items-center gap-x-2 text-sm" id="tab-0">
+                <i class="fas fa-terminal"></i> <span>Console & Logs</span>
+            </button>
+            <button onclick="switchTab(1)" class="tab px-7 py-3 flex items-center gap-x-2 text-sm text-slate-300 hover:text-white" id="tab-1">
+                <i class="fas fa-folder"></i> <span>File Manager</span>
+            </button>
+            <button onclick="switchTab(2)" class="tab px-7 py-3 flex items-center gap-x-2 text-sm text-slate-300 hover:text-white" id="tab-2">
+                <i class="fas fa-box"></i> <span>Packages</span>
+            </button>
+        </div>
+
+        <!-- CONSOLE TAB -->
+        <div id="tab-content-0">
+            <div class="glass rounded-3xl p-7">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="font-semibold flex items-center gap-x-2"><i class="fas fa-terminal"></i> Live Logs</div>
+                    <div class="flex gap-x-2 text-xs">
+                        <button onclick="refreshServerLogs()" class="px-4 py-1.5 flex items-center bg-white/5 hover:bg-white/10 rounded-2xl"><i class="fas fa-sync mr-2"></i> Refresh</button>
+                        <button onclick="clearLogs()" class="px-4 py-1.5 flex items-center bg-white/5 hover:bg-white/10 rounded-2xl"><i class="fas fa-trash mr-2"></i> Clear</button>
+                        <a href="/api/bot/{{ bot.id }}/file/download/{{ bot.id }}.log" class="px-4 py-1.5 flex items-center bg-white/5 hover:bg-white/10 rounded-2xl"><i class="fas fa-download mr-2"></i> Download</a>
+                    </div>
+                </div>
+                
+                <div id="serverLogs" class="log-container bg-black/70 border border-white/10 p-5 h-[420px] overflow-auto rounded-2xl text-emerald-300/90 text-xs whitespace-pre-wrap"></div>
+                <div class="text-xs text-center text-slate-500 mt-3">Logs auto-update every 1.5s when bot running</div>
+            </div>
+        </div>
+
+        <!-- FILE MANAGER TAB -->
+        <div id="tab-content-1" class="hidden">
+            <div class="glass rounded-3xl p-7">
+                <div class="flex items-center justify-between mb-5">
+                    <div class="font-semibold">Files in Bot Directory</div>
+                    <div>
+                        <button onclick="showUploadModal()" class="px-4 py-2 text-xs flex items-center gap-x-2 bg-white text-black font-medium rounded-2xl"><i class="fas fa-upload"></i> <span>Upload File / Zip</span></button>
+                    </div>
+                </div>
+                
+                <div id="filesList" class="text-sm"></div>
+            </div>
+        </div>
+
+        <!-- PACKAGES TAB -->
+        <div id="tab-content-2" class="hidden">
+            <div class="glass rounded-3xl p-7">
+                <div class="font-semibold mb-4 flex items-center gap-x-2"><i class="fas fa-box"></i> Python Packages</div>
+                
+                <div class="bg-black/40 border border-white/10 rounded-2xl p-5">
+                    <p class="text-xs text-slate-400">Upload a <span class="font-mono text-emerald-300">requirements.txt</span> in File Manager, then install dependencies here.</p>
+                    
+                    <div class="mt-5 flex gap-x-3">
+                        <button onclick="installPackages()" class="px-6 py-2.5 text-sm font-semibold flex items-center gap-x-2 bg-emerald-600 hover:bg-emerald-500 transition rounded-2xl">
+                            <i class="fas fa-download"></i> <span>Install from requirements.txt</span>
+                        </button>
+                        <button onclick="refreshInstallLogs()" class="px-5 py-2.5 text-sm flex items-center gap-x-2 bg-white/5 hover:bg-white/10 transition rounded-2xl">
+                            <i class="fas fa-sync"></i> <span>Refresh Logs</span>
+                        </button>
+                    </div>
+                    
+                    <div id="installLogs" class="mt-5 log-container text-xs bg-black/60 p-4 rounded-2xl h-60 overflow-auto border border-white/10 hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" onclick="if (event.target.id === 'uploadModal') hideUploadModal()" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[200]">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-md rounded-3xl p-7 modal">
+            <h3 class="font-semibold mb-4">Upload File to Bot</h3>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="uploadFile" class="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-2xl file:border-0 file:bg-white/10 file:text-white hover:file:bg-white/20 mb-4">
+                <p class="text-xs text-emerald-300">.zip files will be automatically extracted</p>
+                
+                <div class="mt-6 flex justify-end gap-x-3">
+                    <button type="button" onclick="hideUploadModal()" class="px-6 py-2 text-sm rounded-2xl border border-white/10">Cancel</button>
+                    <button type="button" onclick="uploadFile()" class="px-8 py-2 bg-white text-black font-semibold text-sm rounded-2xl">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 0;
+        
+        function switchTab(tab) {
+            // Hide all
+            document.querySelectorAll('[id^="tab-content-"]').forEach(el => el.classList.add('hidden'));
+            // Show selected
+            document.getElementById('tab-content-' + tab).classList.remove('hidden');
+            
+            // Update active styles
+            document.querySelectorAll('.tab').forEach((el, idx) => {
+                if (idx === tab) {
+                    el.classList.add('tab-active');
+                    el.classList.remove('text-slate-300');
+                } else {
+                    el.classList.remove('tab-active');
+                    el.classList.add('text-slate-300');
+                }
+            });
+            
+            currentTab = tab;
+            
+            if (tab === 1) loadFiles();
+            if (tab === 2) refreshInstallLogs();
+        }
+        
+        async function controlBot(action) {
+            let url = `/api/bot/{{ bot.id }}/${action}`;
+            try {
+                const res = await fetch(url, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || "Action failed");
+                }
+            } catch(e) {
+                alert("Network error");
+            }
+        }
+        
+        async function refreshServerLogs() {
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/logs?lines=120`);
+                const data = await res.json();
+                const container = document.getElementById('serverLogs');
+                container.innerHTML = data.logs.length ? data.logs.join('\n') : 'No logs available yet.';
+                container.scrollTop = container.scrollHeight;
+            } catch(e){}
+        }
+        
+        function clearLogs() {
+            document.getElementById('serverLogs').innerHTML = 'Logs cleared (client side).';
+        }
+        
+        async function loadFiles() {
+            const container = document.getElementById('filesList');
+            container.innerHTML = `<div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading files...</div>`;
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/files`);
+                const data = await res.json();
+                
+                if (!data.success || !data.files.length) {
+                    container.innerHTML = `<div class="text-center py-10"><i class="fas fa-folder-open text-4xl text-white/20 mb-4"></i><div class="text-sm">No files yet.<br>Upload bot.py or other files.</div></div>`;
+                    return;
+                }
+                
+                let html = `<table class="w-full text-sm"><thead><tr class="text-xs uppercase text-slate-400"><th class="text-left pb-3 pl-2">File</th><th class="text-right pb-3">Size</th><th class="text-right pb-3">Modified</th><th></th></tr></thead><tbody>`;
+                
+                data.files.forEach(f => {
+                    html += `<tr class="file-row border-t border-white/5">
+                        <td class="py-3 pl-2 font-medium">${f.name}</td>
+                        <td class="py-3 text-right text-xs text-slate-400">${(f.size/1024).toFixed(1)} KB</td>
+                        <td class="py-3 text-right text-xs text-slate-400">${f.modified}</td>
+                        <td class="py-3 text-right pr-1">
+                            <div class="flex justify-end gap-x-px">
+                                <button onclick="readFile('${f.name}')" class="p-2 text-emerald-400 hover:bg-white/5 rounded-xl"><i class="fas fa-edit fa-sm"></i></button>
+                                <a href="/api/bot/{{ bot.id }}/file/download/${f.name}" class="p-2 text-sky-400 hover:bg-white/5 rounded-xl"><i class="fas fa-download fa-sm"></i></a>
+                                <button onclick="deleteFile('${f.name}')" class="p-2 text-red-400 hover:bg-white/5 rounded-xl"><i class="fas fa-trash fa-sm"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = `<div class="text-red-400 text-sm p-4">Failed to load files</div>`;
+            }
+        }
+        
+        async function readFile(filename) {
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/file/read`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filename })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const newContent = prompt(`Editing: ${filename}`, data.content);
+                    if (newContent !== null) {
+                        await fetch(`/api/bot/{{ bot.id }}/file/save`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ filename, content: newContent })
+                        });
+                        loadFiles();
+                    }
+                }
+            } catch(e){ alert("Error reading file"); }
+        }
+        
+        async function deleteFile(filename) {
+            if (!confirm(`Delete ${filename}?`)) return;
+            await fetch(`/api/bot/{{ bot.id }}/file/delete`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ filename })
+            });
+            loadFiles();
+        }
+        
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+            document.getElementById('uploadModal').classList.add('flex');
+        }
+        
+        function hideUploadModal() {
+            const m = document.getElementById('uploadModal');
+            m.classList.remove('flex');
+            m.classList.add('hidden');
+        }
+        
+        async function uploadFile() {
+            const fileInput = document.getElementById('uploadFile');
+            if (!fileInput.files.length) return alert("Select a file");
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    hideUploadModal();
+                    loadFiles();
+                    if (data.extracted) alert("ZIP extracted successfully!");
+                } else {
+                    alert(data.error);
+                }
+            } catch(e){ alert("Upload failed"); }
+        }
+        
+        async function installPackages() {
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/install`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('installLogs').classList.remove('hidden');
+                    refreshInstallLogs();
+                    setTimeout(refreshInstallLogs, 3000);
+                } else {
+                    alert(data.error);
+                }
+            } catch(e){ alert("Install failed to start"); }
+        }
+        
+        async function refreshInstallLogs() {
+            const container = document.getElementById('installLogs');
+            container.classList.remove('hidden');
+            container.innerHTML = 'Loading install logs...';
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/install/logs`);
+                const data = await res.json();
+                container.innerHTML = data.logs.length ? data.logs.join('\n') : 'No install logs yet.';
+            } catch(e){}
+        }
+        
+        // Initial load
+        async function initServerPage() {
+            // Load initial logs
+            await refreshServerLogs();
+            
+            // Auto refresh logs
+            setInterval(() => {
+                if (!document.getElementById('tab-content-0').classList.contains('hidden')) {
+                    refreshServerLogs();
+                }
+            }, 1500);
+            
+            // Default show console
+            switchTab(0);
+            
+            // Keyboard hint
+            console.log('%c[BotHost] Server panel ready. Press ESC to go back.', 'color:#475569');
+        }
+        
+        document.addEventListener('keydown', function(ev) {
+            if (ev.key === "Escape") {
+                const upload = document.getElementById('uploadModal');
+                if (!upload.classList.contains('hidden')) {
+                    upload.classList.add('hidden');
+                    upload.classList.remove('flex');
+                } else {
+                    window.location.href = "{{ url_for('dashboard') }}";
+                }
+            }
+        });
+        
+        window.onload = initServerPage;
+    </script>
+</body>
+</html>
