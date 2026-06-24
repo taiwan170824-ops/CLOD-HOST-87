@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotHost • Users</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 600; }
+        
+        .glass { background: rgba(255,255,255, 0.06); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255, 0.08); }
+        .section-header { font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; letter-spacing: -0.025em; }
+        
+        .modern-table { border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+        .modern-table th { background: rgba(15, 23, 42, 0.6); font-weight: 600; }
+        .modern-table td, .modern-table th { padding: 14px 20px; }
+        
+        .status-pill {
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: -.5px;
+        }
+        
+        .user-row { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .user-row:hover { background-color: rgba(255,255,255, 0.03); transform: translateY(-1px); }
+        
+        .modal {
+            animation: modalPopIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes modalPopIn {
+            from { opacity: 0; transform: scale(0.8) translateY(40px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .nav-active { background: rgba(99, 102, 241, 0.15); color: #6366f1; border-radius: 12px; }
+        
+        .bot-link {
+            transition: all .1s ease;
+        }
+        .bot-link:hover {
+            color: #6366f1;
+            transform: translateX(2px);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <!-- Top Navigation -->
+    <nav class="border-b border-white/10 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto">
+            <div class="px-8 py-5 flex items-center justify-between">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="font-display text-2xl font-semibold tracking-tighter">BotHost</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-2 text-sm">
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center gap-x-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-white/5 rounded-2xl transition-colors">
+                        <i class="fas fa-tachometer-alt w-4"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <div class="px-4 py-2 bg-white/5 text-white rounded-2xl flex items-center gap-x-2 text-sm font-medium">
+                        <i class="fas fa-users w-4"></i>
+                        <span>Users</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="flex items-center gap-x-2 px-4 py-2 text-slate-400 hover:text-red-400 hover:bg-red-950/30 rounded-2xl transition-colors text-sm">
+                        <i class="fas fa-sign-out-alt w-4"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-2xl mx-auto px-8 py-8">
+        <!-- Header -->
+        <div class="flex items-end justify-between mb-8">
+            <div>
+                <h1 class="section-header tracking-tighter">User Management</h1>
+                <p class="text-slate-400 mt-1">Create, manage and monitor all hosting accounts</p>
+            </div>
+            <button onclick="showAddUserModal()" 
+                    class="flex items-center gap-x-2 bg-white text-slate-900 hover:bg-white/90 transition-all px-6 py-3 rounded-2xl font-semibold text-sm shadow-lg active:scale-[0.985]">
+                <i class="fas fa-plus"></i>
+                <span>Add New User</span>
+            </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="glass rounded-3xl p-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs uppercase tracking-[1px] text-slate-500 font-medium">Total Users</p>
+                        <p class="text-4xl font-semibold tracking-tighter mt-1">{{ users|length }}</p>
+                    </div>
+                    <div class="w-11 h-11 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-users text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="glass rounded-3xl p-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs uppercase tracking-[1px] text-slate-500 font-medium">Admins</p>
+                        <p class="text-4xl font-semibold tracking-tighter mt-1">{{ users.values() | selectattr('is_admin', 'eq', true) | list | length }}</p>
+                    </div>
+                    <div class="w-11 h-11 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="glass rounded-3xl p-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs uppercase tracking-[1px] text-slate-500 font-medium">Active Accounts</p>
+                        <p class="text-4xl font-semibold tracking-tighter mt-1">{{ users|length }}</p>
+                    </div>
+                    <div class="w-11 h-11 bg-sky-500/10 text-sky-400 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-check-circle text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="glass rounded-3xl p-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs uppercase tracking-[1px] text-slate-500 font-medium">Total Bots Hosted</p>
+                        <p class="text-4xl font-semibold tracking-tighter mt-1">{{ users.values() | map(attribute='bots') | map('length') | sum }}</p>
+                    </div>
+                    <div class="w-11 h-11 bg-violet-500/10 text-violet-400 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-robot text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="glass rounded-3xl overflow-hidden border border-white/10">
+            <table class="w-full modern-table text-sm">
+                <thead>
+                    <tr class="text-left text-xs uppercase tracking-widest text-slate-400">
+                        <th class="pl-8">User</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th>Expires</th>
+                        <th class="text-center">Bots</th>
+                        <th class="text-right pr-8">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-sm">
+                    {% for username, data in users.items() %}
+                    <tr class="user-row border-b border-white/5 last:border-0">
+                        <td class="pl-8 py-5">
+                            <div class="flex items-center gap-x-3">
+                                <div class="w-9 h-9 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center ring-1 ring-white/10">
+                                    <i class="fas fa-user text-slate-400"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-white">{{ username }}</div>
+                                    <div class="text-xs text-slate-500">{{ data.created_at[:10] if data.created_at else '-' }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if data.is_admin %}
+                                <span class="status-pill bg-emerald-500/10 text-emerald-400">Admin</span>
+                            {% else %}
+                                <span class="status-pill bg-slate-700 text-slate-300">User</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-slate-400">{{ data.created_at[:10] if data.created_at else '-' }}</td>
+                        <td>
+                            {% set exp = data.expires_at %}
+                            {% if exp %}
+                                {% set is_expired = exp < current_time %}
+                                {% if is_expired %}
+                                    <span class="status-pill bg-red-500/10 text-red-400">Expired</span>
+                                {% else %}
+                                    <span class="text-emerald-400 font-medium">{{ exp[:10] }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="status-pill bg-slate-700 text-slate-300">Never</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="inline-flex items-center justify-center bg-white/5 text-xs font-mono px-3.5 py-1 rounded-full">
+                                {{ data.bots | length }}
+                            </div>
+                        </td>
+                        <td class="text-right pr-8">
+                            <div class="flex items-center justify-end gap-x-1.5">
+                                {% if username != 'admin' %}
+                                <!-- Direct Bot Access -->
+                                {% if data.bots %}
+                                <div class="relative group">
+                                    <button onclick="showUserBotsModal('{{ username }}', {{ data.bots | tojson }})" 
+                                            class="px-3 py-1.5 text-xs flex items-center gap-x-1.5 bg-white/5 hover:bg-white/10 transition rounded-2xl text-slate-300 hover:text-white">
+                                        <i class="fas fa-robot text-xs"></i>
+                                        <span class="font-medium">Bots</span>
+                                    </button>
+                                </div>
+                                {% endif %}
+                                
+                                <button onclick="resetPassword('{{ username }}')" 
+                                        class="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-950/30 transition rounded-2xl" title="Reset Password">
+                                    <i class="fas fa-key text-base"></i>
+                                </button>
+                                
+                                <button onclick="extendDuration('{{ username }}')" 
+                                        class="p-2 text-slate-400 hover:text-sky-400 hover:bg-sky-950/30 transition rounded-2xl" title="Extend Duration">
+                                    <i class="fas fa-clock text-base"></i>
+                                </button>
+                                
+                                <button onclick="deleteUser('{{ username }}')" 
+                                        class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition rounded-2xl" title="Delete User">
+                                    <i class="fas fa-trash text-base"></i>
+                                </button>
+                                {% else %}
+                                <span class="px-3 py-1 text-xs bg-white/5 text-slate-500 rounded-2xl">Protected</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not users %}
+        <div class="text-center py-16 text-slate-400">
+            <i class="fas fa-users text-5xl mb-4 opacity-30"></i>
+            <p>No users found</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div class="glass w-full max-w-md rounded-3xl p-7 modal border border-white/10">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="font-semibold text-2xl tracking-tight">Create New Account</h3>
+                    <p class="text-sm text-slate-400">New user will get access to BotHost</p>
+                </div>
+                <button onclick="hideAddUserModal()" class="text-slate-400 hover:text-white p-2"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="text-xs tracking-widest text-slate-400 block mb-1.5">USERNAME</label>
+                    <input id="newUsername" type="text" class="w-full bg-slate-900 border border-white/10 focus:border-indigo-500 rounded-2xl px-4 py-3 text-sm outline-none" placeholder="e.g. mukeshdev">
+                </div>
+                <div>
+                    <label class="text-xs tracking-widest text-slate-400 block mb-1.5">PASSWORD</label>
+                    <input id="newPassword" type="password" class="w-full bg-slate-900 border border-white/10 focus:border-indigo-500 rounded-2xl px-4 py-3 text-sm outline-none" placeholder="Strong password">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs tracking-widest text-slate-400 block mb-1.5">DURATION (DAYS)</label>
+                        <input id="durationDays" type="number" value="30" class="w-full bg-slate-900 border border-white/10 focus:border-indigo-500 rounded-2xl px-4 py-3 text-sm outline-none">
+                    </div>
+                    <div class="flex items-end">
+                        <label class="flex items-center gap-x-2 cursor-pointer text-sm">
+                            <input type="checkbox" id="isAdminCheck" class="accent-indigo-500 w-4 h-4">
+                            <span class="text-slate-300">Give Admin rights</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-x-3 mt-8">
+                <button onclick="hideAddUserModal()" class="flex-1 py-3 text-sm font-medium border border-white/10 hover:bg-white/5 transition rounded-2xl">Cancel</button>
+                <button onclick="addNewUser()" class="flex-1 py-3 text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition rounded-2xl">Create Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Bots Modal (Direct Access) -->
+    <div id="userBotsModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div class="glass w-full max-w-lg rounded-3xl p-7 modal border border-white/10">
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <h3 class="font-semibold text-xl" id="userBotsTitle">User's Bots</h3>
+                    <p class="text-xs text-slate-400" id="userBotsSubtitle"></p>
+                </div>
+                <button onclick="hideUserBotsModal()" class="text-slate-400 hover:text-white"><i class="fas fa-times text-2xl"></i></button>
+            </div>
+            
+            <div id="userBotsList" class="max-h-[320px] overflow-auto space-y-2 pr-1 custom-scroll">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div class="mt-6 text-xs text-center text-slate-500">Click any bot to open its dedicated server panel</div>
+        </div>
+    </div>
+
+    <script>
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+            document.getElementById('addUserModal').classList.add('flex');
+        }
+        
+        function hideAddUserModal() {
+            const modal = document.getElementById('addUserModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        async function addNewUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newPassword').value.trim();
+            const duration = parseInt(document.getElementById('durationDays').value) || 30;
+            const isAdmin = document.getElementById('isAdminCheck').checked;
+            
+            if (!username || !password) {
+                alert("Username and password are required");
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/admin/user/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username, password, is_admin: isAdmin, duration_days: duration })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || "Failed to create user");
+                }
+            } catch(e) {
+                alert("Network error");
+            }
+        }
+        
+        function showUserBotsModal(username, botIds) {
+            const modal = document.getElementById('userBotsModal');
+            const listContainer = document.getElementById('userBotsList');
+            const title = document.getElementById('userBotsTitle');
+            const subtitle = document.getElementById('userBotsSubtitle');
+            
+            title.innerHTML = `${username}'s Bots`;
+            subtitle.innerHTML = `${botIds.length} bot(s) • Direct access`;
+            listContainer.innerHTML = '';
+            
+            if (!botIds || botIds.length === 0) {
+                listContainer.innerHTML = `<div class="text-center py-8 text-slate-400"><i class="fas fa-robot text-3xl mb-3 opacity-40"></i><p>No bots created yet</p></div>`;
+            } else {
+                botIds.forEach(botId => {
+                    const div = document.createElement('div');
+                    div.className = `flex items-center justify-between bg-white/5 hover:bg-white/10 px-5 py-3.5 rounded-2xl transition cursor-pointer bot-link`;
+                    div.innerHTML = `
+                        <div class="flex items-center gap-x-3">
+                            <i class="fas fa-robot text-indigo-400"></i>
+                            <div>
+                                <div class="font-medium text-sm">${botId}</div>
+                                <div class="text-[10px] text-slate-500">Click to manage</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-xs px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full">Open Server →</span>
+                        </div>
+                    `;
+                    div.onclick = () => {
+                        window.location.href = `/server/${botId}`;
+                    };
+                    listContainer.appendChild(div);
+                });
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        function hideUserBotsModal() {
+            const modal = document.getElementById('userBotsModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        async function resetPassword(username) {
+            const newPass = prompt(`Enter new password for ${username}:`);
+            if (!newPass) return;
+            
+            const res = await fetch(`/api/admin/user/${username}/reset`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ password: newPass })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Password reset successfully!");
+            } else {
+                alert(data.error || "Failed");
+            }
+        }
+        
+        async function extendDuration(username) {
+            const days = prompt(`Extend ${username} by how many days?`, "30");
+            if (!days) return;
+            
+            const res = await fetch(`/api/admin/user/${username}/extend`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ days: parseInt(days) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Duration extended!");
+                window.location.reload();
+            } else {
+                alert(data.error || "Failed");
+            }
+        }
+        
+        async function deleteUser(username) {
+            if (!confirm(`Delete user ${username} and ALL their bots? This cannot be undone.`)) return;
+            
+            const res = await fetch(`/api/admin/user/${username}/delete`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || "Failed to delete");
+            }
+        }
+        
+        // Keyboard escape for modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "Escape") {
+                document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                    if (!modal.classList.contains('hidden')) {
+                        modal.classList.add('hidden');
+                        modal.classList.remove('flex');
+                    }
+                });
+            }
+        });
+        
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#6366f1');
+        }
+        initializeTailwind();
+    </script>
+</body>
+</html>

@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotHost • Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 600; }
+        
+        .glass { background: rgba(255,255,255, 0.055); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .section-header { font-size: 1.875rem; line-height: 2.25rem; font-weight: 700; letter-spacing: -.03em; }
+        
+        .bot-card {
+            transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1), 
+                        box-shadow 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .bot-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        
+        .status-running { 
+            background: #166534; color: #4ade80; 
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15);
+            animation: pulse-green 2s infinite;
+        }
+        .status-stopped { background: #334155; color: #94a3b8; }
+        
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15); }
+            50% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.25); }
+        }
+        
+        .nav-active { background-color: rgba(99,102,241,.15); color: white; }
+        
+        .modal { animation: fadePopScale 0.18s ease forwards; }
+        @keyframes fadePopScale {
+            from { opacity:0; transform: scale(0.92) translateY(30px); }
+            to { opacity:1; transform: scale(1) translateY(0); }
+        }
+        
+        .metric-value { font-variant-numeric: tabular-nums; }
+        
+        .filter-btn {
+            transition: all .15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .filter-btn.active {
+            background-color: rgba(255,255,255,0.12);
+            color: white !important;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <!-- Navbar -->
+    <nav class="border-b border-white/10 bg-slate-950/90 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-8">
+            <div class="flex h-16 items-center justify-between">
+                <div class="flex items-center gap-x-8">
+                    <div class="flex items-center gap-x-3">
+                        <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 flex items-center justify-center shadow-inner">
+                            <i class="fas fa-robot text-white text-[22px]"></i>
+                        </div>
+                        <span class="font-display text-[27px] font-semibold tracking-[-1.5px]">BotHost</span>
+                    </div>
+                    
+                    <div class="hidden md:flex items-center gap-x-1 text-sm">
+                        <a href="{{ url_for('dashboard') }}" class="nav-active px-5 py-[9px] text-sm font-medium flex items-center gap-x-2 rounded-2xl">
+                            <i class="fas fa-chart-line w-4"></i> 
+                            <span>Dashboard</span>
+                        </a>
+                        {% if is_admin %}
+                        <a href="{{ url_for('users_page') }}" class="px-5 py-[9px] hover:bg-white/5 flex items-center gap-x-2 text-slate-300 hover:text-white transition rounded-2xl">
+                            <i class="fas fa-users w-4"></i> 
+                            <span>Users</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-3">
+                    <div class="flex items-center bg-white/5 rounded-3xl px-1.5 py-1 text-xs">
+                        <div class="px-3 flex items-center gap-x-2">
+                            <i class="fas fa-user text-emerald-400"></i>
+                            <span class="font-medium">{{ username }}</span>
+                            {% if is_admin %}<span class="text-emerald-400 text-[10px] font-mono px-1.5 py-px bg-emerald-900/70 rounded">ADMIN</span>{% endif %}
+                        </div>
+                        {% if expiry and expiry != 'Never' %}
+                        <div class="px-3 border-l border-white/10 text-emerald-300 text-xs flex items-center">
+                            <i class="fas fa-clock mr-1.5 text-xs"></i>
+                            <span>{{ expiry[:10] }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{{ url_for('logout') }}" class="text-xs flex items-center gap-x-2 px-4 py-2 hover:bg-red-950/60 text-red-400 hover:text-red-300 transition rounded-2xl">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="hidden md:inline">Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-2xl mx-auto px-8 pt-9 pb-12">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-y-4 mb-9">
+            <div>
+                <h1 class="section-header tracking-[-1.8px]">Your Bots</h1>
+                <p class="text-slate-400">Manage all your Telegram bots from one beautiful place</p>
+            </div>
+            
+            <div class="flex items-center gap-x-3">
+                {% if is_admin %}
+                <a href="{{ url_for('users_page') }}" 
+                   class="px-5 py-2.5 flex items-center gap-x-2 text-sm font-medium border border-white/10 hover:bg-white/5 transition rounded-2xl">
+                    <i class="fas fa-users"></i>
+                    <span>Manage Users</span>
+                </a>
+                {% endif %}
+                <button onclick="showAddBotModal()" 
+                        class="flex items-center gap-x-2.5 px-6 py-2.5 bg-white hover:bg-white/95 active:bg-white transition text-slate-950 font-semibold rounded-2xl text-sm shadow-xl">
+                    <i class="fas fa-plus"></i>
+                    <span>Add New Bot</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-9">
+            <div class="glass rounded-3xl px-6 py-5">
+                <div class="text-xs text-slate-400 tracking-wider">TOTAL BOTS</div>
+                <div class="text-5xl font-semibold tracking-tighter metric-value mt-1" id="stat-total">{{ bots | length }}</div>
+            </div>
+            <div class="glass rounded-3xl px-6 py-5">
+                <div class="text-xs text-emerald-400 tracking-wider">RUNNING</div>
+                <div class="text-5xl font-semibold tracking-tighter metric-value mt-1 text-emerald-400" id="stat-running">
+                    {{ bots | selectattr('status', 'eq', 'running') | list | length }}
+                </div>
+            </div>
+            <div class="glass rounded-3xl px-6 py-5">
+                <div class="text-xs text-slate-400 tracking-wider">STOPPED</div>
+                <div class="text-5xl font-semibold tracking-tighter metric-value mt-1" id="stat-stopped">
+                    {{ bots | selectattr('status', 'eq', 'stopped') | list | length }}
+                </div>
+            </div>
+            <div class="glass rounded-3xl px-6 py-5 flex flex-col justify-between">
+                <div>
+                    <div class="text-xs text-slate-400 tracking-wider">UPTIME</div>
+                    <div class="text-4xl font-semibold tracking-tighter mt-1">99.9%</div>
+                </div>
+                <div class="text-[10px] text-emerald-400 flex items-center"><i class="fas fa-check mr-1"></i> All systems operational</div>
+            </div>
+        </div>
+
+        <!-- Search + Filters -->
+        <div class="flex flex-col md:flex-row gap-3 mb-6 items-center">
+            <div class="flex-1 w-full">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-4 top-4 text-slate-500"></i>
+                    <input type="text" id="searchInput" placeholder="Search bots by name or ID..." 
+                           class="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 focus:border-indigo-500 rounded-2xl text-sm outline-none transition"
+                           onkeyup="filterBots()">
+                </div>
+            </div>
+            
+            <div class="flex gap-2 bg-white/5 p-1 rounded-2xl">
+                <button onclick="filterBots('all')" id="filter-all"
+                        class="filter-btn active px-5 py-2 text-sm rounded-[14px] font-medium flex items-center gap-x-2 transition">
+                    <i class="fas fa-th-large"></i> <span>All</span>
+                </button>
+                <button onclick="filterBots('running')" id="filter-running"
+                        class="filter-btn px-5 py-2 text-sm rounded-[14px] font-medium flex items-center gap-x-2 text-emerald-400 hover:bg-emerald-950/30 transition">
+                    <i class="fas fa-play"></i> <span>Running</span>
+                </button>
+                <button onclick="filterBots('stopped')" id="filter-stopped"
+                        class="filter-btn px-5 py-2 text-sm rounded-[14px] font-medium flex items-center gap-x-2 text-slate-400 hover:bg-slate-800 transition">
+                    <i class="fas fa-stop"></i> <span>Stopped</span>
+                </button>
+            </div>
+            
+            <button onclick="refreshAllStatuses()" 
+                    class="px-4 py-3 text-sm flex items-center gap-x-2 bg-white/5 hover:bg-white/10 rounded-2xl transition text-xs font-medium">
+                <i class="fas fa-sync-alt"></i>
+                <span class="hidden md:inline">Refresh Status</span>
+            </button>
+        </div>
+
+        <!-- Bots Grid -->
+        {% if not bots %}
+        <div class="glass rounded-3xl py-20 px-8 text-center max-w-md mx-auto">
+            <div class="mx-auto w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-robot text-4xl text-white/40"></i>
+            </div>
+            <h3 class="text-2xl font-semibold tracking-tight">No bots yet</h3>
+            <p class="text-slate-400 mt-2 max-w-xs mx-auto">Get started by adding your first Telegram bot. It only takes 30 seconds.</p>
+            <button onclick="showAddBotModal()" class="mt-8 inline-flex items-center gap-x-2 px-8 py-3 bg-white text-black font-semibold rounded-2xl text-sm active:scale-[0.985] transition">
+                <i class="fas fa-plus"></i> Add Your First Bot
+            </button>
+        </div>
+        {% else %}
+        
+        <div id="botsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
+            {% for bot in bots %}
+            <div class="bot-card glass rounded-3xl p-6 flex flex-col border border-white/10 hover:border-white/20 group" 
+                 data-name="{{ bot.name | lower }}" 
+                 data-id="{{ bot.id | lower }}" 
+                 data-status="{{ bot.status }}">
+                <!-- Header -->
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="font-semibold text-[21px] tracking-[-0.4px] leading-none group-hover:text-indigo-300 transition">{{ bot.name }}</div>
+                        <div class="text-[10px] font-mono text-slate-500 mt-2 tracking-[1.5px]">{{ bot.id }}</div>
+                    </div>
+                    
+                    <div>
+                        {% if bot.status == 'running' %}
+                            <div class="status-running status-pill px-3.5 py-1 text-xs font-bold flex items-center gap-x-1.5">
+                                <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                                RUNNING
+                            </div>
+                        {% else %}
+                            <div class="status-pill status-stopped px-3.5 py-1 text-xs font-bold">STOPPED</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Token preview -->
+                <div class="mt-5 text-xs">
+                    <div class="text-slate-400 mb-px">Token</div>
+                    <div class="font-mono text-emerald-300/90 truncate">{{ bot.token[:28] if bot.token else 'No token' }}...</div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="mt-auto pt-6 flex flex-wrap gap-2">
+                    {% if bot.status == 'running' %}
+                        <button onclick="stopBot('{{ bot.id }}')" 
+                                class="flex-1 flex items-center justify-center gap-x-2 bg-red-600/90 hover:bg-red-600 transition text-white text-xs font-semibold py-2.5 rounded-2xl active:scale-[0.985]">
+                            <i class="fas fa-stop"></i>
+                            <span>Stop</span>
+                        </button>
+                        <button onclick="restartBot('{{ bot.id }}')" 
+                                class="flex-1 flex items-center justify-center gap-x-2 bg-amber-600/90 hover:bg-amber-600 transition text-white text-xs font-semibold py-2.5 rounded-2xl active:scale-[0.985]">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Restart</span>
+                        </button>
+                    {% else %}
+                        <button onclick="startBot('{{ bot.id }}')" 
+                                class="flex-1 flex items-center justify-center gap-x-2 bg-emerald-600 hover:bg-emerald-500 transition text-white text-xs font-semibold py-2.5 rounded-2xl active:scale-[0.985]">
+                            <i class="fas fa-play"></i>
+                            <span>Start Bot</span>
+                        </button>
+                    {% endif %}
+                    
+                    <button onclick="showLogs('{{ bot.id }}', '{{ bot.name }}')" 
+                            class="px-4 flex items-center justify-center gap-x-1.5 bg-white/5 hover:bg-white/10 text-xs font-medium rounded-2xl transition active:scale-[0.985]">
+                        <i class="fas fa-terminal"></i>
+                    </button>
+                    
+                    <button onclick="editBot('{{ bot.id }}')" 
+                            class="px-4 flex items-center justify-center gap-x-1.5 bg-white/5 hover:bg-white/10 text-xs font-medium rounded-2xl transition active:scale-[0.985]">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    
+                    <a href="{{ url_for('server_view', bot_id=bot.id) }}" 
+                       class="px-4 flex items-center justify-center gap-x-1.5 bg-white/5 hover:bg-white/10 text-xs font-medium rounded-2xl transition active:scale-[0.985]">
+                        <i class="fas fa-server"></i>
+                    </a>
+                    
+                    <button onclick="deleteBot('{{ bot.id }}', '{{ bot.name }}')" 
+                            class="px-3 flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-950/60 rounded-2xl transition active:scale-[0.985]">
+                        <i class="fas fa-trash text-sm"></i>
+                    </button>
+                </div>
+                
+                <div class="text-[10px] text-slate-500 mt-4 flex justify-between items-center">
+                    <div>Added {{ bot.created_at[:10] if bot.created_at else 'recently' }}</div>
+                    <div class="font-mono text-emerald-400/70">{{ bot.owner if bot.owner else 'you' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Bot Modal -->
+    <div id="addBotModal" onclick="if (event.target.id === 'addBotModal') hideAddBotModal()" class="hidden fixed inset-0 bg-black/80 z-[90] flex items-center justify-center p-5">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-2xl rounded-3xl border border-white/10 p-8 modal">
+            <div class="flex justify-between mb-6">
+                <div>
+                    <span class="font-semibold tracking-tight text-3xl">Add New Bot</span>
+                </div>
+                <button onclick="hideAddBotModal()" class="text-3xl leading-none text-slate-400 hover:text-white">&times;</button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <!-- Quick Templates -->
+                <div class="lg:col-span-2">
+                    <div class="uppercase text-xs tracking-[1.5px] mb-3 text-slate-400">Quick Templates</div>
+                    
+                    <div onclick="useTemplate('echo')" class="cursor-pointer mb-3 p-4 border border-white/10 hover:border-indigo-500/60 transition rounded-2xl group">
+                        <div class="font-semibold flex items-center gap-x-2"><i class="fas fa-bolt text-amber-400"></i> Echo Bot</div>
+                        <div class="text-xs text-slate-400 mt-1 group-hover:text-slate-300">Simple bot that replies with the same message. Perfect starter.</div>
+                    </div>
+                    
+                    <div onclick="useTemplate('command')" class="cursor-pointer p-4 border border-white/10 hover:border-indigo-500/60 transition rounded-2xl group">
+                        <div class="font-semibold flex items-center gap-x-2"><i class="fas fa-terminal text-sky-400"></i> Command Bot</div>
+                        <div class="text-xs text-slate-400 mt-1 group-hover:text-slate-300">/start and /help commands with clean replies.</div>
+                    </div>
+                </div>
+                
+                <div class="lg:col-span-3 space-y-5">
+                    <div>
+                        <label class="uppercase tracking-widest text-xs text-slate-400 block mb-1.5">Bot Name</label>
+                        <input id="botName" type="text" class="w-full px-5 py-3.5 rounded-2xl bg-slate-900 border border-white/10 focus:border-indigo-500 outline-none text-sm" placeholder="My Awesome Bot">
+                    </div>
+                    
+                    <div>
+                        <label class="uppercase tracking-widest text-xs text-slate-400 block mb-1.5">Telegram Bot Token <span class="text-red-400">*</span></label>
+                        <input id="botToken" type="text" class="w-full px-5 py-3.5 rounded-2xl bg-slate-900 border border-white/10 focus:border-indigo-500 outline-none font-mono text-sm" placeholder="123456789:AAF...">
+                        <p class="text-[10px] text-emerald-300/70 mt-1">Get from @BotFather • Token is encrypted at rest</p>
+                    </div>
+                    
+                    <div>
+                        <label class="uppercase tracking-widest text-xs text-slate-400 block mb-1.5">Python Code</label>
+                        <textarea id="botCode" rows="7" class="w-full px-5 py-4 font-mono text-xs rounded-2xl bg-slate-900 border border-white/10 focus:border-indigo-500 outline-none resize-y" placeholder="import os&#10;from telegram.ext import ..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-x-3 mt-7">
+                <button onclick="hideAddBotModal()" class="px-8 py-3 text-sm font-medium border border-white/10 hover:bg-white/5 transition rounded-2xl">Cancel</button>
+                <button onclick="addNewBot()" class="px-9 py-3 bg-white text-black font-semibold text-sm rounded-2xl active:scale-[0.985] transition flex items-center gap-x-2">
+                    <span>Deploy Bot</span> <i class="fas fa-rocket"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logsModal" onclick="if (event.target.id === 'logsModal') hideLogsModal()" class="hidden fixed inset-0 bg-black/80 z-[90] flex items-center justify-center p-5">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-3xl rounded-3xl border border-white/10 p-7 modal max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <span class="font-semibold text-xl" id="logsBotName"></span>
+                    <span id="logsStatus" class="ml-3 text-xs px-3 py-px rounded font-mono"></span>
+                </div>
+                <div class="flex gap-x-2">
+                    <button onclick="refreshLogs()" class="px-4 py-1.5 text-xs flex items-center gap-x-2 bg-white/5 hover:bg-white/10 rounded-2xl"><i class="fas fa-sync-alt"></i> <span>Refresh</span></button>
+                    <button onclick="hideLogsModal()" class="text-3xl leading-none px-1 text-slate-400 hover:text-white">&times;</button>
+                </div>
+            </div>
+            
+            <div id="logsContent" class="flex-1 overflow-auto bg-black/60 p-5 rounded-2xl font-mono text-xs text-emerald-300/90 whitespace-pre-wrap border border-white/5 custom-scroll"></div>
+            
+            <div class="text-[10px] text-center text-slate-500 mt-3">Auto-refresh every 2 seconds when bot is running</div>
+        </div>
+    </div>
+
+    <script>
+        let currentBotId = null;
+        let logsInterval = null;
+        
+        function showAddBotModal() {
+            document.getElementById('addBotModal').classList.remove('hidden');
+            document.getElementById('addBotModal').classList.add('flex');
+        }
+        
+        function hideAddBotModal() {
+            const m = document.getElementById('addBotModal');
+            m.classList.remove('flex');
+            m.classList.add('hidden');
+        }
+        
+        function useTemplate(type) {
+            const codeArea = document.getElementById('botCode');
+            const nameInput = document.getElementById('botName');
+            
+            if (type === 'echo') {
+                nameInput.value = "Echo Bot";
+                codeArea.value = `import os
+from telegram.ext import ApplicationBuilder, MessageHandler, filters
+
+async def echo(update, context):
+    await update.message.reply_text(update.message.text)
+
+app = ApplicationBuilder().token(os.environ['BOT_TOKEN']).build()
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+app.run_polling()`;
+            } else if (type === 'command') {
+                nameInput.value = "Command Bot";
+                codeArea.value = `import os
+from telegram.ext import ApplicationBuilder, CommandHandler
+
+async def start(update, context):
+    await update.message.reply_text("Hello! I'm a command bot.")
+
+async def help_cmd(update, context):
+    await update.message.reply_text("Available commands: /start /help")
+
+app = ApplicationBuilder().token(os.environ['BOT_TOKEN']).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("help", help_cmd))
+app.run_polling()`;
+            }
+        }
+        
+        async function addNewBot() {
+            const name = document.getElementById('botName').value.trim();
+            const token = document.getElementById('botToken').value.trim();
+            const code = document.getElementById('botCode').value.trim();
+            
+            if (!name || !token || !code) {
+                alert("Please fill name, token and code");
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/bot/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, token, code })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || "Failed to add bot");
+                }
+            } catch (e) {
+                alert("Error adding bot");
+            }
+        }
+        
+        async function startBot(botId) {
+            const btns = event.currentTarget;
+            try {
+                const res = await fetch(`/api/bot/${botId}/start`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error);
+                }
+            } catch(e){ alert("Failed"); }
+        }
+        
+        async function stopBot(botId) {
+            try {
+                const res = await fetch(`/api/bot/${botId}/stop`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) window.location.reload();
+                else alert(data.error);
+            } catch(e){ alert("Failed"); }
+        }
+        
+        async function restartBot(botId) {
+            try {
+                const res = await fetch(`/api/bot/${botId}/restart`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) window.location.reload();
+                else alert(data.error);
+            } catch(e){ alert("Failed"); }
+        }
+        
+        async function deleteBot(botId, name) {
+            if (!confirm(`Delete bot "${name}" permanently?`)) return;
+            try {
+                const res = await fetch(`/api/bot/${botId}/delete`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) window.location.reload();
+                else alert(data.error);
+            } catch(e){ alert("Failed"); }
+        }
+        
+        let currentLogsBot = null;
+        
+        function showLogs(botId, botName) {
+            currentLogsBot = botId;
+            document.getElementById('logsBotName').innerText = botName;
+            document.getElementById('logsModal').classList.remove('hidden');
+            document.getElementById('logsModal').classList.add('flex');
+            refreshLogs();
+            
+            // Auto refresh
+            if (logsInterval) clearInterval(logsInterval);
+            logsInterval = setInterval(() => {
+                if (!document.getElementById('logsModal').classList.contains('hidden')) {
+                    refreshLogs();
+                }
+            }, 2000);
+        }
+        
+        function hideLogsModal() {
+            if (logsInterval) clearInterval(logsInterval);
+            const m = document.getElementById('logsModal');
+            m.classList.remove('flex');
+            m.classList.add('hidden');
+        }
+        
+        async function refreshLogs() {
+            if (!currentLogsBot) return;
+            try {
+                const res = await fetch(`/api/bot/${currentLogsBot}/logs?lines=80`);
+                const data = await res.json();
+                
+                const container = document.getElementById('logsContent');
+                container.innerHTML = data.logs.length ? data.logs.join('\n') : 'No logs yet. Start the bot to see output.';
+                
+                const statusEl = document.getElementById('logsStatus');
+                statusEl.innerHTML = data.status === 'running' ? 
+                    `<span class="bg-emerald-500/20 text-emerald-400 px-2.5 py-px rounded">LIVE</span>` : 
+                    `<span class="bg-slate-700 px-2.5 py-px rounded">STOPPED</span>`;
+            } catch(e) {}
+        }
+        
+        async function editBot(botId) {
+            try {
+                const res = await fetch(`/api/bot/${botId}/code`);
+                const data = await res.json();
+                
+                const newName = prompt("Bot Name:", data.name);
+                if (newName === null) return;
+                
+                const newToken = prompt("Bot Token (leave empty to keep):", data.token || "");
+                
+                const newCode = prompt("Bot Code (paste new code or leave to keep current):", data.code.substring(0, 300) + (data.code.length > 300 ? "..." : ""));
+                if (newCode === null) return;
+                
+                const payload = { name: newName };
+                if (newToken) payload.token = newToken;
+                if (newCode && newCode !== data.code.substring(0, 300) + "...") payload.code = newCode;
+                
+                const updateRes = await fetch(`/api/bot/${botId}/edit`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await updateRes.json();
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert(result.error);
+                }
+            } catch(e) {
+                alert("Failed to load bot data");
+            }
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "?" && document.activeElement.tagName === "BODY") {
+                e.preventDefault();
+                showAddBotModal();
+            }
+            if (e.key.toLowerCase() === "escape") {
+                document.querySelectorAll('.fixed.inset-0').forEach(el => {
+                    el.classList.remove('flex');
+                    el.classList.add('hidden');
+                });
+            }
+        });
+        
+        // Toast helper (optional future)
+        // ==================== NEW: Search + Filter System ====================
+        let currentFilter = 'all';
+
+        function filterBots(filterType = null) {
+            if (filterType) currentFilter = filterType;
+            
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const cards = document.querySelectorAll('#botsGrid .bot-card');
+            let visibleCount = 0;
+
+            // Update active filter button styles
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active', 'bg-white/10'));
+            const activeBtn = document.getElementById('filter-' + currentFilter);
+            if (activeBtn) activeBtn.classList.add('active', 'bg-white/10');
+
+            cards.forEach(card => {
+                const name = card.dataset.name || '';
+                const id = card.dataset.id || '';
+                const status = card.dataset.status || '';
+                
+                const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm);
+                const matchesFilter = (currentFilter === 'all') || (status === currentFilter);
+                
+                if (matchesSearch && matchesFilter) {
+                    card.style.display = '';
+                    card.style.opacity = '1';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Update dynamic stats
+            updateDynamicStats(visibleCount);
+        }
+
+        function updateDynamicStats(visible) {
+            // Optional: you can show "Showing X of Y" if needed
+            // For now we keep original stats (they reflect server state)
+        }
+
+        function filterBotsByStatus(status) {
+            // Legacy support if needed
+            filterBots(status);
+        }
+
+        async function refreshAllStatuses() {
+            const btns = event.currentTarget;
+            try {
+                const res = await fetch('/api/bots/status');
+                const statuses = await res.json();
+                
+                document.querySelectorAll('#botsGrid .bot-card').forEach(card => {
+                    const botId = card.dataset.id;
+                    if (statuses[botId]) {
+                        const statusEl = card.querySelector('.status-pill, .status-running, .status-stopped');
+                        if (statusEl) {
+                            if (statuses[botId] === 'running') {
+                                statusEl.outerHTML = `<div class="status-running status-pill px-3.5 py-1 text-xs font-bold flex items-center gap-x-1.5"><div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>RUNNING</div>`;
+                                card.dataset.status = 'running';
+                            } else {
+                                statusEl.outerHTML = `<div class="status-pill status-stopped px-3.5 py-1 text-xs font-bold">STOPPED</div>`;
+                                card.dataset.status = 'stopped';
+                            }
+                        }
+                    }
+                });
+                
+                // Re-apply current filter after status update
+                setTimeout(() => filterBots(), 50);
+            } catch(e) {
+                console.log('Status refresh failed');
+            }
+        }
+
+        // Initialize filters on load
+        function initDashboardFilters() {
+            // Make filter buttons nicer on load
+            const allBtn = document.getElementById('filter-all');
+            if (allBtn) allBtn.classList.add('active', 'bg-white/10');
+            
+            // Allow pressing Enter in search to focus first visible bot (nice touch)
+            const search = document.getElementById('searchInput');
+            if (search) {
+                search.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const firstVisible = document.querySelector('#botsGrid .bot-card[style*="display: block"], #botsGrid .bot-card:not([style*="display: none"])');
+                        if (firstVisible) firstVisible.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            }
+            
+            // Initial filter
+            setTimeout(() => {
+                filterBots('all');
+            }, 100);
+        }
+
+        // Auto init
+        window.addEventListener('load', function() {
+            initDashboardFilters();
+        });
+
+        console.log('%c[BotHost] Dashboard loaded with beautiful animations + search/filters', 'color:#64748b');
+    </script>
+</body>
+</html>

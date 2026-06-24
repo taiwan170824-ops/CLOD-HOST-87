@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotHost • Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --primary: #6366f1;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+        }
+
+        .glass {
+            background: rgba(255,255,255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-focus {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .input-focus:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(99 102 241 / 0.1), 0 4px 6px -4px rgb(99 102 241 / 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 25px -5px rgb(99 102 241 / 0.2), 0 8px 10px -6px rgb(99 102 241 / 0.2);
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #6366f1, #a855f7);
+            opacity: 0.08;
+            animation: float 25s infinite ease-in-out;
+        }
+        
+        .shape:nth-child(1) { width: 300px; height: 300px; top: -100px; left: -100px; animation-delay: 0s; }
+        .shape:nth-child(2) { width: 200px; height: 200px; bottom: -80px; right: -50px; animation-delay: -8s; }
+        .shape:nth-child(3) { width: 150px; height: 150px; top: 40%; right: 10%; animation-delay: -15s; }
+
+        .modern-shadow {
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen flex items-center justify-center p-6">
+    <!-- Background shapes -->
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <div class="w-full max-w-md">
+        <!-- Logo -->
+        <div class="flex justify-center mb-8">
+            <div class="flex items-center gap-x-3">
+                <div class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
+                    <i class="fa-solid fa-robot text-white text-4xl"></i>
+                </div>
+                <div>
+                    <span class="font-display text-4xl font-semibold tracking-tighter">BotHost</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Card -->
+        <div class="glass rounded-3xl p-8 modern-shadow login-card">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-semibold tracking-tight">Welcome back</h1>
+                <p class="text-zinc-400 mt-2">Sign in to manage your Telegram bots</p>
+            </div>
+
+            {% if error %}
+            <div class="mb-6 p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl flex items-center gap-x-3 text-sm">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <form method="POST" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-zinc-300 mb-2">Username</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-user text-zinc-500"></i>
+                        </div>
+                        <input type="text" name="username" required 
+                               class="input-focus w-full bg-zinc-900 border border-zinc-800 focus:border-indigo-500 text-white placeholder-zinc-500 rounded-2xl py-3.5 pl-12 pr-4 outline-none text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-zinc-300 mb-2">Password</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-lock text-zinc-500"></i>
+                        </div>
+                        <input type="password" name="password" required 
+                               class="input-focus w-full bg-zinc-900 border border-zinc-800 focus:border-indigo-500 text-white placeholder-zinc-500 rounded-2xl py-3.5 pl-12 pr-4 outline-none text-sm">
+                    </div>
+                </div>
+
+                <button type="submit" 
+                        class="btn-primary w-full py-4 rounded-2xl text-white font-semibold flex items-center justify-center gap-x-2 text-sm tracking-wide">
+                    <span>Sign In</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="mt-8 pt-6 border-t border-white/10 text-center">
+                <p class="text-xs text-zinc-500">Secure access to your bot hosting panel</p>
+            </div>
+        </div>
+
+        <div class="text-center mt-6">
+            <p class="text-xs text-zinc-500">Protected by enterprise-grade encryption</p>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#6366f1');
+        }
+        window.onload = initializeTailwind;
+    </script>
+</body>
+</html>
