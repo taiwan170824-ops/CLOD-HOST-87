@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotHost – Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --border:   #30363d;
+    --accent:   #2ea043;
+    --accent-h: #3fb950;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+    --danger:   #f85149;
+    --radius:   12px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(46,160,67,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(46,160,67,.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes gridMove { to { background-position: 40px 40px; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 24px 64px rgba(0,0,0,.6);
+    animation: slideUp .4s ease;
+  }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), #1a7f37);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .logo-text h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -.02em; }
+  .logo-text p  { font-size: .75rem; color: var(--muted); margin-top: 1px; }
+
+  h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: .4rem; }
+  .subtitle { font-size: .85rem; color: var(--muted); margin-bottom: 1.75rem; }
+
+  label { display: block; font-size: .8rem; font-weight: 500; color: var(--muted); margin-bottom: .4rem; letter-spacing: .04em; text-transform: uppercase; }
+
+  input[type="password"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .7rem 1rem;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type="password"]:focus { border-color: var(--accent); }
+
+  .error-msg {
+    background: rgba(248,81,73,.1);
+    border: 1px solid rgba(248,81,73,.3);
+    color: var(--danger);
+    padding: .6rem .9rem;
+    border-radius: 8px;
+    font-size: .82rem;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .btn-login {
+    width: 100%;
+    margin-top: 1.25rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .75rem;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    letter-spacing: .01em;
+  }
+  .btn-login:hover  { background: var(--accent-h); }
+  .btn-login:active { transform: scale(.98); }
+
+  .hint { margin-top: 1.5rem; font-size: .78rem; color: var(--muted); text-align: center; }
+  .hint code { font-family: 'JetBrains Mono', monospace; background: var(--bg); padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">🤖</div>
+    <div class="logo-text">
+      <h1>BotHost</h1>
+      <p>Telegram Bot Manager</p>
+    </div>
+  </div>
+
+  <h2>Welcome back</h2>
+  <p class="subtitle">Enter your admin password to continue</p>
+
+  {% if error %}
+  <div class="error-msg">⚠ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="/login">
+    <label for="pw">Admin Password</label>
+    <input type="password" id="pw" name="password" placeholder="••••••••" autofocus autocomplete="current-password">
+    <button type="submit" class="btn-login">Sign In →</button>
+  </form>
+
+  <p class="hint">Set password via env var <code>ADMIN_PASSWORD</code></p>
+</div>
+</body>
+</html>
