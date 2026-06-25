@@ -41,7 +41,7 @@ USERS_FILE = "bots_data/users.json"
 LOGS_DIR = "bots_data/logs"
 BOTS_DIR = "bots_data/bots"
 ENCRYPTED_DIR = "bots_data/encrypted"
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "vickyff68")
 ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", secrets.token_hex(32))
 
 os.makedirs("bots_data", exist_ok=True)
