@@ -31,7 +31,7 @@ DATA_FILE = "bots_data/bots.json"
 USERS_FILE = "bots_data/users.json"
 LOGS_DIR  = "bots_data/logs"
 BOTS_DIR  = "bots_data/bots"
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "mukesh2123")
 
 os.makedirs("bots_data", exist_ok=True)
 os.makedirs(LOGS_DIR, exist_ok=True)
