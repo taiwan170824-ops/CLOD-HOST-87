@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotHost • {{ bot.name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap');
+        * { font-family: 'Inter', system_ui, sans-serif; }
+        .font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+        
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: rgba(255,255,255,0.06);
+            --card-bg: rgba(255,255,255,0.04);
+            --input-bg: rgba(255,255,255,0.04);
+            --shadow-color: rgba(0,0,0,0.3);
+        }
+        
+        .light-theme {
+            --bg-primary: #f1f5f9;
+            --bg-secondary: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: rgba(0,0,0,0.08);
+            --card-bg: rgba(0,0,0,0.03);
+            --input-bg: rgba(0,0,0,0.05);
+            --shadow-color: rgba(0,0,0,0.1);
+        }
+        
+        body { background: var(--bg-primary); color: var(--text-primary); transition: all 0.3s ease; }
+        
+        .glass { background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--border-color); }
+        .glass-card { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-color); transition: all 0.3s ease; }
+        .glass-card:hover { background: rgba(255,255,255, 0.06); border-color: rgba(255,255,255, 0.12); }
+        
+        .tab { padding: 10px 24px; border-radius: 12px 12px 0 0; font-weight: 500; font-size: 0.875rem; transition: all 0.2s ease; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab:hover { color: #e2e8f0; }
+        .tab-active { color: #818cf8; border-bottom-color: #818cf8; background: rgba(99, 102, 241, 0.05); }
+        
+        .file-item { transition: all 0.15s ease; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); }
+        .file-item:hover { background: rgba(255,255,255, 0.04); }
+        .file-item.selected { background: rgba(99, 102, 241, 0.1); border-left: 3px solid #818cf8; }
+        .file-item:last-child { border-bottom: none; }
+        
+        .file-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        .file-icon.py { background: rgba(52, 211, 153, 0.12); color: #34d399; }
+        .file-icon.txt { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
+        .file-icon.zip { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
+        .file-icon.json { background: rgba(167, 139, 250, 0.12); color: #a78bfa; }
+        .file-icon.md { background: rgba(244, 63, 94, 0.12); color: #f43f5e; }
+        .file-icon.img { background: rgba(52, 211, 153, 0.12); color: #34d399; }
+        .file-icon.folder { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
+        .file-icon.default { background: rgba(148, 163, 184, 0.1); color: #94a3b8; }
+        
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-dot.running { background: #34d399; animation: pulse 2s infinite; }
+        .status-dot.stopped { background: #64748b; }
+        .status-dot.pending { background: #fbbf24; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+        
+        .log-container { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.75rem; line-height: 1.6; }
+        .code-editor { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-primary); width: 100%; min-height: 400px; resize: vertical; outline: none; tab-size: 4; }
+        .code-editor:focus { border-color: rgba(99, 102, 241, 0.4); }
+        
+        .btn-primary { background: linear-gradient(135deg, #818cf8, #6366f1); transition: all 0.2s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(99,102,241,0.3); }
+        .btn-primary:active { transform: scale(0.97); }
+        
+        .btn-success { background: linear-gradient(135deg, #34d399, #10b981); transition: all 0.2s ease; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(16,185,129,0.3); }
+        .btn-success:active { transform: scale(0.97); }
+        
+        .btn-danger { background: linear-gradient(135deg, #f87171, #ef4444); transition: all 0.2s ease; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+        .btn-danger:active { transform: scale(0.97); }
+        
+        .btn-warning { background: linear-gradient(135deg, #fbbf24, #f59e0b); transition: all 0.2s ease; }
+        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(251,191,36,0.3); }
+        .btn-warning:active { transform: scale(0.97); }
+        
+        .btn-outline { border: 1px solid var(--border-color); transition: all 0.2s ease; }
+        .btn-outline:hover { background: var(--card-bg); border-color: rgba(255,255,255,0.15); }
+        
+        .modal { animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+        
+        .empty-state { border: 2px dashed var(--border-color); border-radius: 16px; padding: 40px 20px; }
+        .file-size { font-size: 0.7rem; color: var(--text-secondary); font-weight: 500; }
+        .file-date { font-size: 0.65rem; color: var(--text-secondary); opacity: 0.7; }
+        
+        .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 450px; width: 100%; }
+        .toast { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; display: flex; align-items: center; gap: 12px; }
+        .toast-success { border-left: 4px solid #34d399; }
+        .toast-error { border-left: 4px solid #f87171; }
+        .toast-info { border-left: 4px solid #60a5fa; }
+        .toast-warning { border-left: 4px solid #fbbf24; }
+        .toast-icon { font-size: 1.25rem; flex-shrink: 0; }
+        .toast-success .toast-icon { color: #34d399; }
+        .toast-error .toast-icon { color: #f87171; }
+        .toast-info .toast-icon { color: #60a5fa; }
+        .toast-warning .toast-icon { color: #fbbf24; }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; font-size: 0.875rem; color: white; }
+        .toast-message { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+        .toast-close { cursor: pointer; color: #64748b; transition: color 0.2s; font-size: 1rem; flex-shrink: 0; padding: 4px; }
+        .toast-close:hover { color: white; }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(50px); } }
+        .toast-hide { animation: slideOut 0.3s ease forwards; }
+        
+        .action-btn { transition: all 0.15s ease; padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-secondary); }
+        .action-btn:hover { transform: scale(1.1); background: var(--card-bg); }
+        .action-btn.text-emerald-400 { color: #34d399; }
+        .action-btn.text-amber-400 { color: #fbbf24; }
+        .action-btn.text-sky-400 { color: #60a5fa; }
+        .action-btn.text-red-400 { color: #f87171; }
+        .action-btn.text-purple-400 { color: #a78bfa; }
+        .action-btn.text-pink-400 { color: #f472b6; }
+        
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-2px); border-color: rgba(99,102,241,0.2); }
+        
+        .search-input { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px 16px 8px 36px; font-size: 0.875rem; width: 100%; color: var(--text-primary); outline: none; transition: all 0.2s ease; }
+        .search-input:focus { border-color: rgba(99,102,241,0.4); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .search-input::placeholder { color: var(--text-secondary); opacity: 0.6; }
+        
+        .drop-zone { border: 2px dashed var(--border-color); border-radius: 16px; padding: 40px; text-align: center; transition: all 0.3s ease; }
+        .drop-zone.dragover { border-color: #818cf8; background: rgba(99,102,241,0.05); }
+        
+        .sort-btn { cursor: pointer; transition: all 0.2s ease; padding: 4px 8px; border-radius: 6px; }
+        .sort-btn:hover { color: #818cf8; background: var(--card-bg); }
+        .sort-btn.active { color: #818cf8; background: rgba(99,102,241,0.1); }
+        
+        .badge { font-size: 0.6rem; padding: 2px 8px; border-radius: 9999px; font-weight: 600; }
+        .badge-py { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+        .badge-txt { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+        .badge-zip { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .badge-json { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
+        .badge-folder { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        
+        .theme-toggle { position: fixed; bottom: 30px; left: 30px; z-index: 999; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; color: var(--text-primary); }
+        .theme-toggle:hover { transform: scale(1.1); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        
+        .progress-bar { width: 100%; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden; }
+        .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #818cf8, #34d399); transition: width 0.3s ease; }
+        
+        .template-card { cursor: pointer; transition: all 0.2s ease; border: 2px solid transparent; }
+        .template-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); }
+        .template-card.selected { border-color: #818cf8; background: rgba(99,102,241,0.05); }
+        
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-secondary); flex-wrap: wrap; }
+        .breadcrumb a { color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+        .breadcrumb a:hover { color: #818cf8; }
+        .breadcrumb .separator { color: var(--text-secondary); opacity: 0.5; }
+        
+        @media (max-width: 640px) {
+            .tab { padding: 8px 14px; font-size: 0.75rem; }
+            .file-item { flex-wrap: wrap; gap: 8px; }
+            .theme-toggle { bottom: 16px; left: 16px; width: 40px; height: 40px; }
+            .toast-container { bottom: 80px; right: 16px; left: 16px; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme" id="themeBtn">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Top Bar -->
+    <nav class="border-b border-[var(--border-color)] bg-[var(--bg-primary)]/90 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between">
+                <div class="flex items-center gap-x-2 sm:gap-x-4">
+                    <a href="{{ url_for('dashboard') }}" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-x-2 text-sm">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="hidden sm:inline">Back</span>
+                    </a>
+                    <div class="h-6 w-px bg-[var(--border-color)] hidden sm:block"></div>
+                    <div class="flex items-center gap-x-2 sm:gap-x-3">
+                        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <span class="font-display text-base sm:text-lg tracking-tight truncate max-w-[120px] sm:max-w-[200px]">{{ bot.name }}</span>
+                        <span class="badge badge-py hidden sm:inline">{{ bot.id[:8] }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-x-2 sm:gap-x-3">
+                    <div class="flex items-center gap-x-2 px-2 sm:px-3 py-1.5 bg-[var(--card-bg)] rounded-2xl">
+                        <span class="status-dot {{ 'pending' if bot.get('pending', False) else bot.status }}"></span>
+                        <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider 
+                            {{ 'text-emerald-400' if bot.status == 'running' else 'text-amber-400' if bot.get('pending', False) else 'text-slate-500' }}">
+                            {{ 'Pending Approval' if bot.get('pending', False) else bot.status }}
+                        </span>
+                    </div>
+                    <div class="flex gap-x-1 sm:gap-x-2">
+                        {% if bot.status == 'running' %}
+                            <button onclick="controlBot('stop')" class="btn-danger px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl text-[10px] sm:text-sm font-semibold flex items-center gap-x-1 sm:gap-x-2">
+                                <i class="fas fa-stop"></i> <span class="hidden sm:inline">Stop</span>
+                            </button>
+                            <button onclick="controlBot('restart')" class="btn-outline px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl text-[10px] sm:text-sm font-semibold flex items-center gap-x-1 sm:gap-x-2">
+                                <i class="fas fa-sync-alt"></i> <span class="hidden sm:inline">Restart</span>
+                            </button>
+                        {% else %}
+                            <button onclick="controlBot('start')" class="btn-success px-4 sm:px-6 py-1.5 sm:py-2 rounded-2xl text-[10px] sm:text-sm font-semibold flex items-center gap-x-1 sm:gap-x-2">
+                                <i class="fas fa-play"></i> <span class="hidden sm:inline">Start</span>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        
+        <!-- Stats Row -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div class="stat-card">
+                <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Total Files</p>
+                <p class="text-xl sm:text-2xl font-bold mt-1" id="statTotalFiles">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Python Files</p>
+                <p class="text-xl sm:text-2xl font-bold mt-1 text-emerald-400" id="statPyFiles">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Folders</p>
+                <p class="text-xl sm:text-2xl font-bold mt-1 text-amber-400" id="statFolders">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Total Size</p>
+                <p class="text-xl sm:text-2xl font-bold mt-1 text-indigo-400" id="statTotalSize">0 KB</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Packages</p>
+                <p class="text-xl sm:text-2xl font-bold mt-1 text-violet-400" id="statPackages">0</p>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-x-1 border-b border-[var(--border-color)] mb-4 sm:mb-6 overflow-x-auto">
+            <button onclick="switchTab(0)" class="tab tab-active whitespace-nowrap" id="tab-0">
+                <i class="fas fa-terminal mr-1 sm:mr-2"></i><span class="hidden sm:inline">Console</span><span class="sm:hidden">Logs</span>
+            </button>
+            <button onclick="switchTab(1)" class="tab whitespace-nowrap" id="tab-1">
+                <i class="fas fa-folder mr-1 sm:mr-2"></i><span class="hidden sm:inline">Files</span><span class="sm:hidden">Files</span>
+            </button>
+            <button onclick="switchTab(2)" class="tab whitespace-nowrap" id="tab-2">
+                <i class="fas fa-box mr-1 sm:mr-2"></i><span class="hidden sm:inline">Packages</span><span class="sm:hidden">Pkgs</span>
+            </button>
+            <button onclick="switchTab(3)" class="tab whitespace-nowrap" id="tab-3">
+                <i class="fas fa-chart-bar mr-1 sm:mr-2"></i><span class="hidden sm:inline">Stats</span><span class="sm:hidden">Stats</span>
+            </button>
+            <button onclick="switchTab(4)" class="tab whitespace-nowrap" id="tab-4">
+                <i class="fas fa-cog mr-1 sm:mr-2"></i><span class="hidden sm:inline">Settings</span><span class="sm:hidden">Settings</span>
+            </button>
+        </div>
+
+        <!-- TAB 0: Console -->
+        <div id="tab-content-0">
+            <div class="glass rounded-3xl p-4 sm:p-6">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div class="flex items-center gap-x-3">
+                        <i class="fas fa-terminal text-indigo-400"></i>
+                        <span class="font-semibold text-sm sm:text-base">Live Logs</span>
+                        <span class="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full">auto</span>
+                    </div>
+                    <div class="flex flex-wrap gap-x-2 gap-y-1 text-xs">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]"></i>
+                            <input type="text" id="logSearch" placeholder="Search..." class="search-input text-xs py-1 pl-8 pr-3 w-28 sm:w-40" onkeyup="filterLogs()">
+                        </div>
+                        <button onclick="refreshServerLogs()" class="px-2 sm:px-3 py-1.5 bg-[var(--card-bg)] hover:bg-[var(--card-bg)]/80 rounded-xl flex items-center gap-x-1 transition text-[10px] sm:text-xs">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button onclick="clearLogs()" class="px-2 sm:px-3 py-1.5 bg-[var(--card-bg)] hover:bg-[var(--card-bg)]/80 rounded-xl flex items-center gap-x-1 transition text-[10px] sm:text-xs">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <button onclick="exportLogs()" class="px-2 sm:px-3 py-1.5 bg-[var(--card-bg)] hover:bg-[var(--card-bg)]/80 rounded-xl flex items-center gap-x-1 transition text-[10px] sm:text-xs">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button onclick="toggleAutoScroll()" class="px-2 sm:px-3 py-1.5 bg-[var(--card-bg)] hover:bg-[var(--card-bg)]/80 rounded-xl flex items-center gap-x-1 transition text-[10px] sm:text-xs" id="autoScrollBtn">
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="serverLogs" class="log-container bg-black/60 border border-[var(--border-color)] p-3 sm:p-5 h-[300px] sm:h-[420px] overflow-auto rounded-2xl text-emerald-300/90 whitespace-pre-wrap text-[10px] sm:text-xs">
+                    <span class="text-slate-500">No logs available yet. Start the bot to see output.</span>
+                </div>
+                <div class="text-[10px] text-center text-[var(--text-secondary)] mt-3">
+                    <i class="fas fa-circle text-[6px] text-emerald-500 mr-2"></i>Logs auto-update every 2s
+                    <span class="mx-2">|</span>
+                    <i class="fas fa-keyboard mr-1"></i>Ctrl+F to search
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 1: Files - COMPLETE FILE MANAGER -->
+        <div id="tab-content-1" class="hidden">
+            <div class="glass rounded-3xl p-4 sm:p-6">
+                <!-- Toolbar -->
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div class="flex items-center gap-x-3">
+                        <i class="fas fa-folder text-amber-400"></i>
+                        <span class="font-semibold text-sm sm:text-base">File Manager</span>
+                        <span class="text-[10px] px-2 py-0.5 bg-slate-700/50 text-slate-400 rounded-full" id="fileCount">0 files</span>
+                    </div>
+                    <div class="flex flex-wrap gap-x-1 sm:gap-x-2 gap-y-1">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]"></i>
+                            <input type="text" id="fileSearch" placeholder="Search..." class="search-input text-xs py-1.5 pl-8 pr-3 w-24 sm:w-40" onkeyup="filterFiles()">
+                        </div>
+                        <button onclick="showCreateFolderModal()" class="btn-warning px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl text-[10px] sm:text-sm font-semibold flex items-center gap-x-1">
+                            <i class="fas fa-folder-plus"></i> <span class="hidden sm:inline">Folder</span>
+                        </button>
+                        <button onclick="showCreateFileModal()" class="btn-success px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl text-[10px] sm:text-sm font-semibold flex items-center gap-x-1">
+                            <i class="fas fa-plus"></i> <span class="hidden sm:inline">New</span>
+                        </button>
+                        <button onclick="showUploadModal()" class="btn-primary px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl text-[10px] sm:text-sm font-semibold flex items-center gap-x-1">
+                            <i class="fas fa-upload"></i> <span class="hidden sm:inline">Upload</span>
+                        </button>
+                        <button onclick="exportBot()" class="btn-outline px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl text-[10px] sm:text-sm font-semibold flex items-center gap-x-1 text-purple-400">
+                            <i class="fas fa-file-export"></i>
+                        </button>
+                        <button onclick="loadFiles()" class="btn-outline px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl text-[10px] sm:text-sm font-semibold flex items-center gap-x-1">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Breadcrumb -->
+                <div class="breadcrumb mb-3 text-xs" id="breadcrumb">
+                    <a href="#" onclick="navigateTo('')">📁 Root</a>
+                </div>
+
+                <!-- Bulk Actions -->
+                <div id="bulkActions" class="hidden flex flex-wrap items-center gap-3 mb-3 p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                    <span class="text-sm font-semibold text-indigo-400" id="selectedCount">0</span>
+                    <span class="text-xs text-[var(--text-secondary)]">files selected</span>
+                    <button onclick="bulkDelete()" class="btn-danger px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-x-1">
+                        <i class="fas fa-trash-alt"></i> Delete Selected
+                    </button>
+                    <button onclick="bulkDownload()" class="btn-primary px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-x-1">
+                        <i class="fas fa-download"></i> Download ZIP
+                    </button>
+                    <button onclick="clearSelection()" class="btn-outline px-3 py-1.5 rounded-xl text-xs font-semibold">Clear</button>
+                </div>
+
+                <!-- Drop Zone -->
+                <div id="dropZone" class="drop-zone mb-4 hidden" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <i class="fas fa-cloud-upload-alt text-3xl sm:text-4xl text-slate-600 mb-2 sm:mb-3"></i>
+                    <p class="text-sm text-[var(--text-secondary)]">Drop files here to upload</p>
+                    <div class="progress-bar mt-3 hidden" id="uploadProgress">
+                        <div class="fill" id="uploadProgressFill" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Sort Options -->
+                <div class="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 mb-3 text-[10px] sm:text-xs text-[var(--text-secondary)]">
+                    <span class="sort-btn active" data-sort="name" onclick="sortFiles('name')"><i class="fas fa-sort-alpha-down mr-1"></i>Name</span>
+                    <span class="sort-btn" data-sort="size" onclick="sortFiles('size')"><i class="fas fa-sort-numeric-down mr-1"></i>Size</span>
+                    <span class="sort-btn" data-sort="date" onclick="sortFiles('date')"><i class="fas fa-clock mr-1"></i>Date</span>
+                    <span class="sort-btn" data-sort="type" onclick="sortFiles('type')"><i class="fas fa-tag mr-1"></i>Type</span>
+                    <span class="sort-btn" data-sort="extension" onclick="sortFiles('extension')"><i class="fas fa-file mr-1"></i>Extension</span>
+                </div>
+
+                <!-- Files List -->
+                <div id="filesList" class="bg-black/30 rounded-2xl border border-[var(--border-color)] overflow-hidden">
+                    <!-- Files loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Packages -->
+        <div id="tab-content-2" class="hidden">
+            <div class="glass rounded-3xl p-4 sm:p-6">
+                <div class="flex items-center gap-x-3 mb-5">
+                    <i class="fas fa-box text-violet-400"></i>
+                    <span class="font-semibold text-sm sm:text-base">Python Packages</span>
+                    <span class="badge badge-zip">pip</span>
+                </div>
+                <div class="bg-black/40 border border-[var(--border-color)] rounded-2xl p-4 sm:p-5">
+                    <p class="text-sm text-[var(--text-secondary)]">
+                        <i class="fas fa-info-circle text-slate-500 mr-2"></i>
+                        Upload <span class="font-mono text-emerald-400">requirements.txt</span> and install dependencies.
+                    </p>
+                    
+                    <div class="mt-4">
+                        <p class="text-xs text-[var(--text-secondary)] mb-2">Installed Packages:</p>
+                        <div id="installedPackages" class="flex flex-wrap gap-2">
+                            <span class="text-xs px-3 py-1 bg-[var(--card-bg)] rounded-full text-[var(--text-secondary)]">Click "List Packages" to see</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex flex-wrap gap-x-3 gap-y-2">
+                        <button onclick="installPackages()" class="btn-success px-4 sm:px-6 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
+                            <i class="fas fa-download"></i> Install
+                        </button>
+                        <button onclick="listPackages()" class="btn-outline px-4 sm:px-5 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
+                            <i class="fas fa-list"></i> List
+                        </button>
+                        <button onclick="refreshInstallLogs()" class="btn-outline px-4 sm:px-5 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
+                            <i class="fas fa-sync-alt"></i> Logs
+                        </button>
+                        <button onclick="clearInstallLogs()" class="btn-outline px-4 sm:px-5 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2 text-red-400">
+                            <i class="fas fa-trash-alt"></i> Clear Logs
+                        </button>
+                    </div>
+                    
+                    <div id="installLogs" class="mt-5 log-container bg-black/60 p-3 sm:p-4 rounded-2xl h-40 sm:h-60 overflow-auto border border-[var(--border-color)] hidden text-[var(--text-primary)] text-[10px] sm:text-xs whitespace-pre-wrap">
+                        <span class="text-slate-500">No install logs yet.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Stats -->
+        <div id="tab-content-3" class="hidden">
+            <div class="glass rounded-3xl p-4 sm:p-6">
+                <div class="flex items-center gap-x-3 mb-5">
+                    <i class="fas fa-chart-bar text-amber-400"></i>
+                    <span class="font-semibold text-sm sm:text-base">Bot Statistics</span>
+                    <button onclick="refreshStats()" class="btn-outline px-3 py-1 rounded-xl text-xs">Refresh</button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="stat-card">
+                        <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Total Files</p>
+                        <p class="text-xl sm:text-2xl font-bold" id="statTotalFiles2">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Python Files</p>
+                        <p class="text-xl sm:text-2xl font-bold text-emerald-400" id="statPyFiles2">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Folders</p>
+                        <p class="text-xl sm:text-2xl font-bold text-amber-400" id="statFolders2">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="text-[10px] sm:text-xs text-[var(--text-secondary)]">Total Size</p>
+                        <p class="text-xl sm:text-2xl font-bold text-indigo-400" id="statTotalSize2">0 KB</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <p class="text-xs text-[var(--text-secondary)] mb-2">Recent Activity</p>
+                    <div id="activityLog" class="bg-black/30 rounded-2xl border border-[var(--border-color)] p-4 h-32 sm:h-40 overflow-auto text-xs text-[var(--text-secondary)]">
+                        <span>No activity yet. Start using the bot.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Settings -->
+        <div id="tab-content-4" class="hidden">
+            <div class="glass rounded-3xl p-4 sm:p-6">
+                <div class="flex items-center gap-x-3 mb-5">
+                    <i class="fas fa-cog text-slate-400"></i>
+                    <span class="font-semibold text-sm sm:text-base">Bot Settings</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Environment Variables -->
+                    <div class="bg-black/30 rounded-2xl border border-[var(--border-color)] p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-semibold text-sm flex items-center gap-x-2">
+                                <i class="fas fa-key text-amber-400"></i> Environment Variables
+                            </span>
+                            <button onclick="saveEnv()" class="btn-primary px-3 py-1.5 rounded-xl text-xs font-semibold">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </div>
+                        <textarea id="envEditor" class="code-editor min-h-[150px] text-xs font-mono" placeholder="# .env file&#10;BOT_TOKEN=your_token&#10;DATABASE_URL=sqlite:///data.db">{% if bot.env %}{{ bot.env }}{% endif %}</textarea>
+                        <p class="text-[10px] text-[var(--text-secondary)] mt-2">
+                            <i class="fas fa-info-circle mr-1"></i> Environment variables for your bot
+                        </p>
+                    </div>
+
+                    <!-- Bot Info -->
+                    <div class="bg-black/30 rounded-2xl border border-[var(--border-color)] p-4">
+                        <span class="font-semibold text-sm flex items-center gap-x-2 mb-3">
+                            <i class="fas fa-info-circle text-sky-400"></i> Bot Information
+                        </span>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-[var(--text-secondary)]">Bot ID</span>
+                                <span class="font-mono text-xs">{{ bot.id }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[var(--text-secondary)]">Name</span>
+                                <span>{{ bot.name }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[var(--text-secondary)]">Status</span>
+                                <span class="font-semibold {{ 'text-emerald-400' if bot.status == 'running' else 'text-amber-400' if bot.get('pending', False) else 'text-slate-500' }}">
+                                    {{ 'Pending Approval' if bot.get('pending', False) else bot.status }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[var(--text-secondary)]">Created</span>
+                                <span>{{ bot.created_at[:10] if bot.created_at else 'N/A' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[var(--text-secondary)]">Owner</span>
+                                <span>{{ bot.owner if bot.owner else 'admin' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[var(--text-secondary)]">Encryption</span>
+                                <span class="text-emerald-400"><i class="fas fa-lock mr-1"></i> Enabled</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bot Templates -->
+                    <div class="bg-black/30 rounded-2xl border border-[var(--border-color)] p-4 md:col-span-2">
+                        <span class="font-semibold text-sm flex items-center gap-x-2 mb-3">
+                            <i class="fas fa-cubes text-purple-400"></i> Bot Templates
+                        </span>
+                        <div id="templateList" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <!-- Templates loaded here -->
+                        </div>
+                        <div class="mt-3 flex gap-x-2">
+                            <select id="templateSelect" class="bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-sm flex-1">
+                                <option value="">Select template...</option>
+                            </select>
+                            <button onclick="applyTemplate()" class="btn-primary px-4 py-2 rounded-xl text-sm font-semibold">
+                                <i class="fas fa-arrow-right"></i> Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MODALS -->
+    <!-- ============================================================ -->
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" onclick="if (event.target.id === 'uploadModal') hideUploadModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-md rounded-3xl p-6 sm:p-7 modal border border-[var(--border-color)]">
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <h3 class="text-xl font-bold tracking-tight">Upload File</h3>
+                    <p class="text-sm text-[var(--text-secondary)] mt-0.5">Upload any file or ZIP</p>
+                </div>
+                <button onclick="hideUploadModal(); resetUploadForm();" class="text-[var(--text-secondary)] hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="uploadForm" enctype="multipart/form-data" onsubmit="return false;">
+                <div class="border-2 border-dashed border-[var(--border-color)] rounded-2xl p-6 sm:p-8 text-center hover:border-indigo-500/50 transition cursor-pointer" 
+                     onclick="document.getElementById('uploadFileInput').click()">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-slate-600 mb-3"></i>
+                    <p class="text-sm text-[var(--text-secondary)]">Click to select or drag & drop</p>
+                    <p class="text-xs text-slate-600 mt-1">Max size: 50MB • Multiple files allowed</p>
+                    <input type="file" id="uploadFileInput" class="hidden" multiple onchange="handleMultipleFiles(this)">
+                </div>
+                <div id="selectedFilesList" class="mt-3 max-h-32 overflow-auto space-y-1 hidden">
+                    <!-- Selected files listed here -->
+                </div>
+                <div class="progress-bar mt-3 hidden" id="uploadProgressBar">
+                    <div class="fill" id="uploadProgressFill" style="width: 0%"></div>
+                </div>
+                <div class="mt-6 flex flex-col sm:flex-row justify-end gap-3 sm:gap-x-3">
+                    <button type="button" onclick="hideUploadModal(); resetUploadForm();" class="px-6 py-2.5 text-sm font-medium border border-[var(--border-color)] hover:bg-white/5 transition rounded-2xl order-2 sm:order-1">Cancel</button>
+                    <button type="button" id="uploadSubmitBtn" onclick="uploadMultipleFiles()" class="btn-primary px-8 py-2.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-2 order-1 sm:order-2">
+                        <i class="fas fa-upload"></i> Upload All
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit File Modal -->
+    <div id="editFileModal" onclick="if (event.target.id === 'editFileModal') hideEditFileModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-4xl rounded-3xl p-5 sm:p-7 modal border border-[var(--border-color)] max-h-[95vh] flex flex-col">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                    <h3 class="text-xl font-bold tracking-tight">Edit File</h3>
+                    <p class="text-sm text-[var(--text-secondary)] mt-0.5" id="editFileName">filename.py</p>
+                </div>
+                <div class="flex items-center gap-x-3">
+                    <span class="text-xs text-[var(--text-secondary)] hidden sm:inline">Ctrl+S to save</span>
+                    <button onclick="hideEditFileModal()" class="text-[var(--text-secondary)] hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <textarea id="editFileContent" class="code-editor flex-1" spellcheck="false"></textarea>
+            <div class="mt-4 flex flex-col sm:flex-row justify-end gap-3 sm:gap-x-3">
+                <button onclick="hideEditFileModal()" class="px-6 py-2.5 text-sm font-medium border border-[var(--border-color)] hover:bg-white/5 transition rounded-2xl order-2 sm:order-1">Cancel</button>
+                <button onclick="saveFileContent()" class="btn-primary px-8 py-2.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-2 order-1 sm:order-2">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create File Modal -->
+    <div id="createFileModal" onclick="if (event.target.id === 'createFileModal') hideCreateFileModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-md rounded-3xl p-6 sm:p-7 modal border border-[var(--border-color)]">
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <h3 class="text-xl font-bold tracking-tight">Create New File</h3>
+                    <p class="text-sm text-[var(--text-secondary)] mt-0.5">Enter filename (e.g., mybot.py)</p>
+                </div>
+                <button onclick="hideCreateFileModal()" class="text-[var(--text-secondary)] hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div>
+                <label class="text-xs uppercase tracking-[0.08em] text-[var(--text-secondary)] block mb-1.5 font-semibold">Filename</label>
+                <input id="newFileName" type="text" class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-[var(--text-primary)] placeholder-slate-600" placeholder="bot.py">
+            </div>
+            <div class="mt-4">
+                <label class="text-xs uppercase tracking-[0.08em] text-[var(--text-secondary)] block mb-1.5 font-semibold">Content (optional)</label>
+                <textarea id="newFileContent" rows="6" class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-[var(--text-primary)] placeholder-slate-600 font-mono"></textarea>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-x-3 mt-6">
+                <button onclick="hideCreateFileModal()" class="flex-1 py-3.5 text-sm font-medium border border-[var(--border-color)] hover:bg-white/5 transition rounded-2xl order-2 sm:order-1">Cancel</button>
+                <button onclick="createNewFile()" class="flex-1 py-3.5 text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition rounded-2xl flex items-center justify-center gap-x-2 order-1 sm:order-2">
+                    <i class="fas fa-plus"></i> Create
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div id="createFolderModal" onclick="if (event.target.id === 'createFolderModal') hideCreateFolderModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-md rounded-3xl p-6 sm:p-7 modal border border-[var(--border-color)]">
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <h3 class="text-xl font-bold tracking-tight">Create Folder</h3>
+                    <p class="text-sm text-[var(--text-secondary)] mt-0.5">Enter folder name</p>
+                </div>
+                <button onclick="hideCreateFolderModal()" class="text-[var(--text-secondary)] hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div>
+                <label class="text-xs uppercase tracking-[0.08em] text-[var(--text-secondary)] block mb-1.5 font-semibold">Folder Name</label>
+                <input id="newFolderName" type="text" class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-[var(--text-primary)] placeholder-slate-600" placeholder="my_folder">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-x-3 mt-6">
+                <button onclick="hideCreateFolderModal()" class="flex-1 py-3.5 text-sm font-medium border border-[var(--border-color)] hover:bg-white/5 transition rounded-2xl order-2 sm:order-1">Cancel</button>
+                <button onclick="createNewFolder()" class="flex-1 py-3.5 text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition rounded-2xl flex items-center justify-center gap-x-2 order-1 sm:order-2">
+                    <i class="fas fa-folder-plus"></i> Create
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div id="renameModal" onclick="if (event.target.id === 'renameModal') hideRenameModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-md rounded-3xl p-6 sm:p-7 modal border border-[var(--border-color)]">
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <h3 class="text-xl font-bold tracking-tight">Rename</h3>
+                    <p class="text-sm text-[var(--text-secondary)] mt-0.5" id="renameOldName">old_name</p>
+                </div>
+                <button onclick="hideRenameModal()" class="text-[var(--text-secondary)] hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div>
+                <label class="text-xs uppercase tracking-[0.08em] text-[var(--text-secondary)] block mb-1.5 font-semibold">New Name</label>
+                <input id="renameNewName" type="text" class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] focus:border-indigo-500 rounded-2xl px-4 py-3.5 text-sm outline-none transition text-[var(--text-primary)] placeholder-slate-600">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-x-3 mt-6">
+                <button onclick="hideRenameModal()" class="flex-1 py-3.5 text-sm font-medium border border-[var(--border-color)] hover:bg-white/5 transition rounded-2xl order-2 sm:order-1">Cancel</button>
+                <button onclick="renameItem()" class="flex-1 py-3.5 text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition rounded-2xl flex items-center justify-center gap-x-2 order-1 sm:order-2">
+                    <i class="fas fa-pen"></i> Rename
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" onclick="if (event.target.id === 'previewModal') hidePreviewModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div onclick="event.stopImmediatePropagation()" class="glass w-full max-w-3xl rounded-3xl p-5 sm:p-7 modal border border-[var(--border-color)] max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-xl font-bold tracking-tight">File Preview</h3>
+                    <p class="text-sm text-[var(--text-secondary)] mt-0.5" id="previewFileName">filename</p>
+                </div>
+                <button onclick="hidePreviewModal()" class="text-[var(--text-secondary)] hover:text-white p-2 rounded-xl hover:bg-white/5 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="previewContent" class="flex-1 overflow-auto bg-black/30 rounded-2xl p-4">
+                <span class="text-slate-500">Loading preview...</span>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="hidePreviewModal()" class="px-6 py-2.5 text-sm font-medium border border-[var(--border-color)] hover:bg-white/5 transition rounded-2xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT - COMPLETE -->
+    <!-- ============================================================ -->
+
+    <script>
+        let currentTab = 0;
+        let selectedFile = null;
+        let editingFile = null;
+        let renamingItem = null;
+        let currentSort = 'name';
+        let fileData = [];
+        let selectedFiles = [];
+        let currentPath = '';
+        let autoScroll = true;
+        let uploadQueue = [];
+        let isUploading = false;
+
+        // ── Theme Toggle ──────────────────────────────────────────────────
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            const icon = document.getElementById('themeIcon');
+            if (document.body.classList.contains('light-theme')) {
+                icon.className = 'fas fa-sun';
+            } else {
+                icon.className = 'fas fa-moon';
+            }
+            localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+        }
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            document.getElementById('themeIcon').className = 'fas fa-sun';
+        }
+
+        // ── Toast ─────────────────────────────────────────────────────────
+        function showToast(message, type = 'success', title = '') {
+            const container = document.getElementById('toastContainer');
+            const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+            const titles = { success: 'Success', error: 'Error', warning: 'Warning', info: 'Info' };
+            
+            while (container.children.length > 5) {
+                container.removeChild(container.firstChild);
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon"><i class="fas ${icons[type] || icons.info}"></i></div>
+                <div class="toast-content">
+                    <div class="toast-title">${title || titles[type] || 'Notification'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.add('toast-hide');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // ── Tabs ──────────────────────────────────────────────────────────
+        function switchTab(tab) {
+            document.querySelectorAll('[id^="tab-content-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-content-' + tab).classList.remove('hidden');
+            document.querySelectorAll('.tab').forEach((el, idx) => {
+                el.classList.toggle('tab-active', idx === tab);
+            });
+            currentTab = tab;
+            if (tab === 1) loadFiles();
+            if (tab === 2) { refreshInstallLogs(); listPackages(); }
+            if (tab === 3) loadStats();
+            if (tab === 4) loadTemplates();
+        }
+
+        // ── Bot Control ──────────────────────────────────────────────────
+        async function controlBot(action) {
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/${action}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Bot ' + action + 'ed successfully!', 'success');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showToast(data.error || 'Action failed', 'error');
+                }
+            } catch(e) {
+                showToast('Network error occurred', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ── Logs ──────────────────────────────────────────────────────────
+        async function refreshServerLogs() {
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/logs?lines=150`);
+                const data = await res.json();
+                const container = document.getElementById('serverLogs');
+                container._originalText = data.logs.join('\n');
+                if (data.logs && data.logs.length) {
+                    container.innerHTML = data.logs.join('\n');
+                    if (autoScroll) container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = '<span class="text-slate-500">No logs available yet. Start the bot to see output.</span>';
+                }
+            } catch(e) { console.log('Log refresh failed'); }
+        }
+
+        function filterLogs() {
+            const search = document.getElementById('logSearch').value.toLowerCase();
+            const container = document.getElementById('serverLogs');
+            const originalText = container._originalText || container.innerHTML;
+            if (!search) {
+                container.innerHTML = originalText;
+                return;
+            }
+            const lines = originalText.split('\n');
+            const filtered = lines.filter(line => line.toLowerCase().includes(search));
+            container.innerHTML = filtered.length ? filtered.join('\n') : 'No matching logs found.';
+        }
+
+        function clearLogs() {
+            const container = document.getElementById('serverLogs');
+            container._originalText = '';
+            container.innerHTML = '<span class="text-slate-500">Logs cleared.</span>';
+            showToast('Logs cleared', 'info');
+        }
+
+        function exportLogs() {
+            const container = document.getElementById('serverLogs');
+            const content = container._originalText || container.innerHTML;
+            const blob = new Blob([content], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bot_{{ bot.id }}_logs.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Logs exported!', 'success');
+        }
+
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            const btn = document.getElementById('autoScrollBtn');
+            btn.classList.toggle('text-indigo-400', autoScroll);
+            showToast(autoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled', 'info');
+        }
+
+        // ── File Manager ──────────────────────────────────────────────────
+        async function loadFiles(path = '') {
+            currentPath = path || '';
+            const container = document.getElementById('filesList');
+            const countEl = document.getElementById('fileCount');
+            container.innerHTML = `<div class="text-center py-8 text-slate-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading files...</div>`;
+            
+            try {
+                const url = `/api/bot/{{ bot.id }}/files${path ? '?path=' + encodeURIComponent(path) : ''}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                // Update breadcrumb
+                updateBreadcrumb(path);
+                
+                if (!data.success || !data.files || data.files.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state text-center py-8 sm:py-12">
+                            <i class="fas fa-folder-open text-4xl sm:text-5xl text-slate-700 mb-4"></i>
+                            <p class="text-slate-500 text-sm">${path ? 'This folder is empty' : 'No files in this directory'}</p>
+                            <p class="text-xs text-slate-600 mt-1">Create a new file or upload one</p>
+                            <div class="mt-4 flex flex-wrap justify-center gap-3">
+                                <button onclick="showCreateFolderModal()" class="btn-warning px-4 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
+                                    <i class="fas fa-folder-plus"></i> New Folder
+                                </button>
+                                <button onclick="showCreateFileModal()" class="btn-success px-4 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
+                                    <i class="fas fa-plus"></i> New File
+                                </button>
+                                <button onclick="showUploadModal()" class="btn-primary px-4 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
+                                    <i class="fas fa-upload"></i> Upload
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    countEl.textContent = '0 files';
+                    updateFileStats([]);
+                    return;
+                }
+                
+                fileData = data.files;
+                countEl.textContent = `${fileData.length} items`;
+                updateFileStats(fileData);
+                renderFiles(fileData);
+                
+            } catch(e) {
+                container.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">Failed to load files</div>`;
+            }
+        }
+
+        function updateBreadcrumb(path) {
+            const breadcrumb = document.getElementById('breadcrumb');
+            let html = `<a href="#" onclick="navigateTo('')">📁 Root</a>`;
+            if (path) {
+                const parts = path.split('/');
+                let current = '';
+                parts.forEach((part, index) => {
+                    current += (index > 0 ? '/' : '') + part;
+                    const isLast = index === parts.length - 1;
+                    if (isLast) {
+                        html += `<span class="separator">/</span><span class="text-[var(--text-primary)]">${part}</span>`;
+                    } else {
+                        html += `<span class="separator">/</span><a href="#" onclick="navigateTo('${current}')">${part}</a>`;
+                    }
+                });
+            }
+            breadcrumb.innerHTML = html;
+        }
+
+        function navigateTo(path) {
+            loadFiles(path);
+            // Reset selection
+            selectedFiles = [];
+            updateBulkActions();
+        }
+
+        function renderFiles(files) {
+            const container = document.getElementById('filesList');
+            const search = document.getElementById('fileSearch').value.toLowerCase();
+            
+            let filtered = files;
+            if (search) {
+                filtered = files.filter(f => f.name.toLowerCase().includes(search));
+            }
+            
+            filtered = sortFileList(filtered, currentSort);
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-500">No matching items found.</div>`;
+                return;
+            }
+
+            let html = `<div class="overflow-x-auto"><table class="w-full text-sm"><tbody>`;
+            
+            // Show folders first
+            const folders = filtered.filter(f => f.type === 'folder');
+            const filesOnly = filtered.filter(f => f.type === 'file');
+            const sortedItems = [...folders, ...filesOnly];
+            
+            sortedItems.forEach(item => {
+                const isFolder = item.type === 'folder';
+                const isSelected = selectedFiles.includes(item.path);
+                const icon = isFolder ? 'folder' : 
+                            item.name.endsWith('.py') ? 'py' :
+                            item.name.endsWith('.txt') ? 'txt' :
+                            item.name.endsWith('.zip') ? 'zip' :
+                            item.name.endsWith('.json') ? 'json' :
+                            item.name.endsWith('.md') ? 'md' :
+                            item.name.match(/\.(jpg|jpeg|png|gif|svg|webp)$/) ? 'img' : 'default';
+                
+                const sizeDisplay = isFolder ? '—' : 
+                    (item.size < 1024 ? '< 1 KB' : (item.size / 1024).toFixed(1) + ' KB');
+                
+                const badge = isFolder ? 'badge-folder' :
+                            item.name.endsWith('.py') ? 'badge-py' :
+                            item.name.endsWith('.txt') ? 'badge-txt' :
+                            item.name.endsWith('.zip') ? 'badge-zip' :
+                            item.name.endsWith('.json') ? 'badge-json' : '';
+                const badgeText = isFolder ? 'FOLDER' :
+                                item.name.endsWith('.py') ? 'PY' :
+                                item.name.endsWith('.txt') ? 'TXT' :
+                                item.name.endsWith('.zip') ? 'ZIP' :
+                                item.name.endsWith('.json') ? 'JSON' : '';
+                
+                const faIcon = isFolder ? 'fa-folder' :
+                              icon === 'py' ? 'fa-file-code' :
+                              icon === 'txt' ? 'fa-file-alt' :
+                              icon === 'zip' ? 'fa-file-archive' :
+                              icon === 'json' ? 'fa-file-code' :
+                              icon === 'md' ? 'fa-file-alt' :
+                              icon === 'img' ? 'fa-image' : 'fa-file';
+                
+                html += `
+                    <tr class="file-item ${isSelected ? 'selected' : ''}">
+                        <td class="flex items-center gap-x-3 flex-1 min-w-0" onclick="${isFolder ? `navigateTo('${item.path}')` : `previewFile('${item.path}')`}" style="cursor: pointer;">
+                            <input type="checkbox" class="mr-1 accent-indigo-500" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelect('${item.path}')">
+                            <div class="file-icon ${icon} flex-shrink-0">
+                                <i class="fas ${faIcon}"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-medium text-sm text-[var(--text-primary)] truncate">${item.name}</div>
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <span class="file-date">${item.modified}</span>
+                                    ${badge ? `<span class="badge ${badge}">${badgeText}</span>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="file-size text-right whitespace-nowrap">${sizeDisplay}</td>
+                        <td class="text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-x-1">
+                                ${!isFolder ? `
+                                    <button onclick="editFile('${item.path}')" class="action-btn text-emerald-400" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                ` : `
+                                    <button onclick="navigateTo('${item.path}')" class="action-btn text-amber-400" title="Open">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                `}
+                                <button onclick="showRenameModal('${item.path}', '${item.type}')" class="action-btn text-amber-400" title="Rename">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                ${!isFolder ? `
+                                    <a href="/api/bot/{{ bot.id }}/file/download/${encodeURIComponent(item.path)}" class="action-btn text-sky-400" title="Download">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                ` : ''}
+                                <button onclick="deleteItem('${item.path}', '${item.type}')" class="action-btn text-red-400" title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+        }
+
+        function updateFileStats(files) {
+            const total = files.length || 0;
+            const pyFiles = files.filter(f => f.type === 'file' && f.name.endsWith('.py')).length;
+            const folders = files.filter(f => f.type === 'folder').length;
+            const totalSize = files.filter(f => f.type === 'file').reduce((sum, f) => sum + (f.size || 0), 0);
+            const sizeKB = (totalSize / 1024).toFixed(1);
+            
+            document.getElementById('statTotalFiles').textContent = total;
+            document.getElementById('statPyFiles').textContent = pyFiles;
+            document.getElementById('statFolders').textContent = folders;
+            document.getElementById('statTotalSize').textContent = sizeKB + ' KB';
+            document.getElementById('statTotalFiles2').textContent = total;
+            document.getElementById('statPyFiles2').textContent = pyFiles;
+            document.getElementById('statFolders2').textContent = folders;
+            document.getElementById('statTotalSize2').textContent = sizeKB + ' KB';
+        }
+
+        function filterFiles() {
+            renderFiles(fileData);
+        }
+
+        function sortFiles(sortBy) {
+            currentSort = sortBy;
+            document.querySelectorAll('.sort-btn').forEach(el => {
+                el.classList.toggle('active', el.dataset.sort === sortBy);
+            });
+            renderFiles(fileData);
+        }
+
+        function sortFileList(files, sortBy) {
+            const sorted = [...files];
+            switch(sortBy) {
+                case 'name': sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
+                case 'size': sorted.sort((a, b) => (a.size || 0) - (b.size || 0)); break;
+                case 'date': sorted.sort((a, b) => new Date(b.modified) - new Date(a.modified)); break;
+                case 'type': sorted.sort((a, b) => a.type === 'folder' ? -1 : b.type === 'folder' ? 1 : a.name.split('.').pop().localeCompare(b.name.split('.').pop())); break;
+                case 'extension': sorted.sort((a, b) => (a.name.split('.').pop() || '').localeCompare(b.name.split('.').pop() || '')); break;
+            }
+            return sorted;
+        }
+
+        // ── Selection & Bulk Actions ────────────────────────────────────
+        function toggleSelect(path) {
+            const index = selectedFiles.indexOf(path);
+            if (index > -1) {
+                selectedFiles.splice(index, 1);
+            } else {
+                selectedFiles.push(path);
+            }
+            updateBulkActions();
+            renderFiles(fileData);
+        }
+
+        function clearSelection() {
+            selectedFiles = [];
+            updateBulkActions();
+            renderFiles(fileData);
+        }
+
+        function updateBulkActions() {
+            const count = selectedFiles.length;
+            const bulkActions = document.getElementById('bulkActions');
+            if (count > 0) {
+                bulkActions.classList.remove('hidden');
+                document.getElementById('selectedCount').textContent = count;
+            } else {
+                bulkActions.classList.add('hidden');
+            }
+        }
+
+        async function bulkDelete() {
+            if (!confirm(`Delete ${selectedFiles.length} items permanently?`)) return;
+            
+            let successCount = 0;
+            for (let path of selectedFiles) {
+                try {
+                    const res = await fetch(`/api/bot/{{ bot.id }}/file/delete`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ path })
+                    });
+                    const data = await res.json();
+                    if (data.success) successCount++;
+                } catch(e) {}
+            }
+            
+            selectedFiles = [];
+            loadFiles(currentPath);
+            showToast(`Deleted ${successCount} items`, 'success');
+        }
+
+        async function bulkDownload() {
+            if (selectedFiles.length === 0) {
+                showToast('No files selected', 'warning');
+                return;
+            }
+            
+            try {
+                // Create a zip of selected files
+                const response = await fetch(`/api/bot/{{ bot.id }}/export?files=${selectedFiles.join(',')}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `bot_export_${Date.now()}.zip`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showToast('Download started!', 'success');
+                } else {
+                    showToast('Export failed', 'error');
+                }
+            } catch(e) {
+                showToast('Export error', 'error');
+            }
+        }
+
+        // ── Drag & Drop ──────────────────────────────────────────────────
+        document.addEventListener('dragover', function(e) {
+            if (currentTab === 1) {
+                document.getElementById('dropZone').classList.remove('hidden');
+            }
+        });
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            document.getElementById('dropZone').classList.remove('dragover');
+        }
+
+        async function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('dropZone').classList.remove('dragover');
+            document.getElementById('dropZone').classList.add('hidden');
+            
+            const files = e.dataTransfer.files;
+            await uploadFiles(files);
+        }
+
+        // ── Upload ──────────────────────────────────────────────────────
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+            document.getElementById('uploadModal').classList.add('flex');
+            document.getElementById('dropZone').classList.add('hidden');
+            document.getElementById('selectedFilesList').classList.add('hidden');
+            document.getElementById('uploadProgressBar').classList.add('hidden');
+            document.getElementById('uploadFileInput').value = '';
+        }
+        
+        function hideUploadModal() {
+            const modal = document.getElementById('uploadModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            resetUploadForm();
+        }
+
+        function resetUploadForm() {
+            document.getElementById('uploadFileInput').value = '';
+            document.getElementById('selectedFilesList').classList.add('hidden');
+            document.getElementById('uploadProgressBar').classList.add('hidden');
+            document.getElementById('uploadProgressFill').style.width = '0%';
+            const btn = document.getElementById('uploadSubmitBtn');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload"></i> Upload All';
+            uploadQueue = [];
+            isUploading = false;
+        }
+
+        function handleMultipleFiles(input) {
+            const files = input.files;
+            if (files.length === 0) return;
+            
+            const listContainer = document.getElementById('selectedFilesList');
+            listContainer.innerHTML = '';
+            listContainer.classList.remove('hidden');
+            
+            for (let file of files) {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between text-xs py-1 border-b border-[var(--border-color)]';
+                div.innerHTML = `
+                    <span class="truncate">${file.name}</span>
+                    <span class="text-[var(--text-secondary)]">${(file.size / 1024).toFixed(1)} KB</span>
+                `;
+                listContainer.appendChild(div);
+            }
+            
+            document.getElementById('uploadSubmitBtn').disabled = false;
+        }
+
+        async function uploadMultipleFiles() {
+            const fileInput = document.getElementById('uploadFileInput');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                showToast('Please select files first', 'warning');
+                return;
+            }
+            
+            await uploadFiles(files);
+        }
+
+        async function uploadFiles(files) {
+            const btn = document.getElementById('uploadSubmitBtn');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const progressFill = document.getElementById('uploadProgressFill');
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+            btn.disabled = true;
+            progressBar.classList.remove('hidden');
+            
+            let successCount = 0;
+            let failCount = 0;
+            let total = files.length;
+            let uploaded = 0;
+            
+            for (let file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const res = await fetch(`/api/bot/{{ bot.id }}/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        successCount++;
+                        showToast(`✅ ${file.name} uploaded`, 'success');
+                    } else {
+                        failCount++;
+                        showToast(`❌ ${file.name}: ${data.error || 'Failed'}`, 'error');
+                    }
+                } catch(e) {
+                    failCount++;
+                    showToast(`❌ ${file.name}: Network error`, 'error');
+                }
+                
+                uploaded++;
+                progressFill.style.width = `${(uploaded / total) * 100}%`;
+            }
+            
+            btn.innerHTML = '<i class="fas fa-upload"></i> Upload All';
+            btn.disabled = false;
+            
+            setTimeout(() => {
+                progressBar.classList.add('hidden');
+                progressFill.style.width = '0%';
+            }, 2000);
+            
+            hideUploadModal();
+            loadFiles(currentPath);
+            showToast(`Uploaded ${successCount} files, ${failCount} failed`, successCount > 0 ? 'success' : 'error');
+        }
+
+        // ── Edit File ──────────────────────────────────────────────────
+        async function editFile(filename) {
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/file/read`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filename })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    editingFile = filename;
+                    document.getElementById('editFileName').textContent = filename;
+                    document.getElementById('editFileContent').value = data.content || '';
+                    document.getElementById('editFileModal').classList.remove('hidden');
+                    document.getElementById('editFileModal').classList.add('flex');
+                    setTimeout(() => document.getElementById('editFileContent').focus(), 100);
+                } else {
+                    showToast(data.error || 'Failed to read file', 'error');
+                }
+            } catch(e) {
+                showToast('Error reading file', 'error');
+            }
+        }
+
+        function hideEditFileModal() {
+            const modal = document.getElementById('editFileModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            editingFile = null;
+        }
+
+        async function saveFileContent() {
+            if (!editingFile) return;
+            const content = document.getElementById('editFileContent').value;
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/file/save`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filename: editingFile, content })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('File saved successfully!', 'success');
+                    hideEditFileModal();
+                    loadFiles(currentPath);
+                } else {
+                    showToast(data.error || 'Failed to save', 'error');
+                }
+            } catch(e) {
+                showToast('Error saving file', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ── Create File ──────────────────────────────────────────────────
+        function showCreateFileModal() {
+            document.getElementById('createFileModal').classList.remove('hidden');
+            document.getElementById('createFileModal').classList.add('flex');
+            document.getElementById('newFileName').value = '';
+            document.getElementById('newFileContent').value = '';
+            setTimeout(() => document.getElementById('newFileName').focus(), 100);
+        }
+
+        function hideCreateFileModal() {
+            const modal = document.getElementById('createFileModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        async function createNewFile() {
+            const filename = document.getElementById('newFileName').value.trim();
+            const content = document.getElementById('newFileContent').value;
+            
+            if (!filename) {
+                showToast('Please enter a filename', 'warning');
+                return;
+            }
+            
+            const path = currentPath ? currentPath + '/' + filename : filename;
+            
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/file/save`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filename: path, content })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('File created successfully!', 'success');
+                    hideCreateFileModal();
+                    loadFiles(currentPath);
+                } else {
+                    showToast(data.error || 'Failed to create', 'error');
+                }
+            } catch(e) {
+                showToast('Error creating file', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ── Create Folder ──────────────────────────────────────────────
+        function showCreateFolderModal() {
+            document.getElementById('createFolderModal').classList.remove('hidden');
+            document.getElementById('createFolderModal').classList.add('flex');
+            document.getElementById('newFolderName').value = '';
+            setTimeout(() => document.getElementById('newFolderName').focus(), 100);
+        }
+
+        function hideCreateFolderModal() {
+            const modal = document.getElementById('createFolderModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        async function createNewFolder() {
+            const folderName = document.getElementById('newFolderName').value.trim();
+            
+            if (!folderName) {
+                showToast('Please enter a folder name', 'warning');
+                return;
+            }
+            
+            const path = currentPath ? currentPath + '/' + folderName : folderName;
+            
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/folder/create`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ path })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Folder created successfully!', 'success');
+                    hideCreateFolderModal();
+                    loadFiles(currentPath);
+                } else {
+                    showToast(data.error || 'Failed to create folder', 'error');
+                }
+            } catch(e) {
+                showToast('Error creating folder', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ── Rename ──────────────────────────────────────────────────────
+        function showRenameModal(name, type) {
+            renamingItem = { name, type, path: currentPath ? currentPath + '/' + name : name };
+            document.getElementById('renameOldName').textContent = name;
+            document.getElementById('renameNewName').value = name;
+            document.getElementById('renameModal').classList.remove('hidden');
+            document.getElementById('renameModal').classList.add('flex');
+            setTimeout(() => document.getElementById('renameNewName').focus(), 100);
+        }
+
+        function hideRenameModal() {
+            const modal = document.getElementById('renameModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            renamingItem = null;
+        }
+
+        async function renameItem() {
+            if (!renamingItem) return;
+            const newName = document.getElementById('renameNewName').value.trim();
+            if (!newName) {
+                showToast('Please enter a new name', 'warning');
+                return;
+            }
+            if (newName === renamingItem.name) {
+                hideRenameModal();
+                return;
+            }
+            
+            const oldPath = renamingItem.path;
+            const newPath = currentPath ? currentPath + '/' + newName : newName;
+            
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Renaming...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/file/rename`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ old_path: oldPath, new_path: newPath })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Renamed successfully!', 'success');
+                    hideRenameModal();
+                    loadFiles(currentPath);
+                } else {
+                    showToast(data.error || 'Failed to rename', 'error');
+                }
+            } catch(e) {
+                showToast('Error renaming', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ── Delete ──────────────────────────────────────────────────────
+        async function deleteItem(path, type) {
+            const name = path.split('/').pop();
+            if (!confirm(`Delete "${name}" permanently?`)) return;
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/file/delete`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ path })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Deleted ${name}`, 'success');
+                    loadFiles(currentPath);
+                } else {
+                    showToast(data.error || 'Failed to delete', 'error');
+                }
+            } catch(e) {
+                showToast('Network error', 'error');
+            }
+        }
+
+        // ── Preview ──────────────────────────────────────────────────────
+        async function previewFile(filename) {
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/file/read`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filename })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('previewFileName').textContent = filename;
+                    const content = data.content;
+                    const ext = filename.split('.').pop().toLowerCase();
+                    
+                    if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) {
+                        document.getElementById('previewContent').innerHTML = `<img src="data:image/${ext};base64,${btoa(content)}" class="max-w-full max-h-96 rounded-lg">`;
+                    } else if (['pdf'].includes(ext)) {
+                        document.getElementById('previewContent').innerHTML = `<embed src="data:application/pdf;base64,${btoa(content)}" type="application/pdf" class="w-full h-96">`;
+                    } else {
+                        document.getElementById('previewContent').innerHTML = `<pre class="whitespace-pre-wrap text-xs font-mono">${content}</pre>`;
+                    }
+                    
+                    document.getElementById('previewModal').classList.remove('hidden');
+                    document.getElementById('previewModal').classList.add('flex');
+                } else {
+                    showToast(data.error || 'Failed to preview', 'error');
+                }
+            } catch(e) {
+                showToast('Preview failed', 'error');
+            }
+        }
+
+        function hidePreviewModal() {
+            const modal = document.getElementById('previewModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        // ── Export Bot ──────────────────────────────────────────────────
+        async function exportBot() {
+            try {
+                showToast('Exporting bot...', 'info');
+                const response = await fetch(`/api/bot/{{ bot.id }}/export`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `bot_{{ bot.id }}_export_${Date.now()}.zip`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showToast('Bot exported successfully!', 'success');
+                } else {
+                    showToast('Export failed', 'error');
+                }
+            } catch(e) {
+                showToast('Export error', 'error');
+            }
+        }
+
+        // ── Packages ──────────────────────────────────────────────────
+        async function installPackages() {
+            const btn = document.querySelector('#tab-content-2 .btn-success');
+            if (!btn) return;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installing...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/install`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('installLogs').classList.remove('hidden');
+                    showToast('Installation started! Check logs.', 'info');
+                    refreshInstallLogs();
+                    setTimeout(refreshInstallLogs, 3000);
+                } else {
+                    showToast(data.error || 'Installation failed', 'error');
+                }
+            } catch(e) {
+                showToast('Network error', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function listPackages() {
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/install/logs`);
+                const data = await res.json();
+                const container = document.getElementById('installedPackages');
+                if (data.logs && data.logs.length) {
+                    const packages = data.logs.filter(line => line.includes('Successfully installed') || line.includes('Requirement already satisfied'));
+                    if (packages.length) {
+                        const lastInstall = packages[packages.length - 1];
+                        const pkgs = lastInstall.replace('Successfully installed', '').replace('Requirement already satisfied', '').split(' ').filter(p => p && !p.includes('already'));
+                        if (pkgs.length) {
+                            container.innerHTML = pkgs.map(p => `<span class="text-xs px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full">${p}</span>`).join(' ');
+                            document.getElementById('statPackages').textContent = pkgs.length;
+                        } else {
+                            container.innerHTML = '<span class="text-xs text-slate-500">No new packages installed.</span>';
+                        }
+                    } else {
+                        container.innerHTML = '<span class="text-xs text-slate-500">No packages installed yet.</span>';
+                    }
+                } else {
+                    container.innerHTML = '<span class="text-xs text-slate-500">No packages installed yet.</span>';
+                }
+            } catch(e) {
+                console.log('Failed to list packages');
+            }
+        }
+        
+        async function refreshInstallLogs() {
+            const container = document.getElementById('installLogs');
+            container.classList.remove('hidden');
+            container.innerHTML = '<span class="text-slate-500">Loading install logs...</span>';
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/install/logs`);
+                const data = await res.json();
+                if (data.logs && data.logs.length) {
+                    container.innerHTML = data.logs.join('\n');
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = '<span class="text-slate-500">No install logs yet.</span>';
+                }
+            } catch(e) {
+                container.innerHTML = '<span class="text-red-400">Failed to load install logs</span>';
+            }
+        }
+
+        function clearInstallLogs() {
+            document.getElementById('installLogs').innerHTML = '<span class="text-slate-500">Logs cleared.</span>';
+            showToast('Install logs cleared', 'info');
+        }
+
+        // ── Stats ──────────────────────────────────────────────────────────
+        function loadStats() {
+            const activity = document.getElementById('activityLog');
+            const now = new Date();
+            const totalFiles = document.getElementById('statTotalFiles').textContent || '0';
+            const pyFiles = document.getElementById('statPyFiles').textContent || '0';
+            
+            activity.innerHTML = `
+                <div class="flex items-center gap-x-2 text-emerald-400 py-1">
+                    <i class="fas fa-check-circle text-xs"></i>
+                    <span>Session started: ${now.toLocaleString()}</span>
+                </div>
+                <div class="flex items-center gap-x-2 text-[var(--text-secondary)] py-1">
+                    <i class="fas fa-file text-xs"></i>
+                    <span>Total files: ${totalFiles}</span>
+                </div>
+                <div class="flex items-center gap-x-2 text-[var(--text-secondary)] py-1">
+                    <i class="fas fa-code text-xs"></i>
+                    <span>Python files: ${pyFiles}</span>
+                </div>
+                <div class="flex items-center gap-x-2 text-[var(--text-secondary)] py-1">
+                    <i class="fas fa-box text-xs"></i>
+                    <span>Bot status: {{ bot.status }}</span>
+                </div>
+                <div class="flex items-center gap-x-2 text-[var(--text-secondary)] py-1">
+                    <i class="fas fa-lock text-xs"></i>
+                    <span>Encryption: Enabled</span>
+                </div>
+            `;
+        }
+
+        function refreshStats() {
+            loadStats();
+            showToast('Stats refreshed!', 'info');
+        }
+
+        // ── Templates ──────────────────────────────────────────────────
+        async function loadTemplates() {
+            try {
+                const res = await fetch('/api/templates');
+                const data = await res.json();
+                const container = document.getElementById('templateList');
+                const select = document.getElementById('templateSelect');
+                
+                container.innerHTML = '';
+                select.innerHTML = '<option value="">Select template...</option>';
+                
+                for (const [key, template] of Object.entries(data)) {
+                    // Add to grid
+                    const card = document.createElement('div');
+                    card.className = 'template-card bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl p-4';
+                    card.innerHTML = `
+                        <div class="font-semibold text-sm">${template.name}</div>
+                        <div class="text-xs text-[var(--text-secondary)] mt-1">${template.description}</div>
+                        <button onclick="applyTemplateById('${key}')" class="btn-primary mt-3 px-3 py-1.5 rounded-xl text-xs font-semibold w-full">
+                            <i class="fas fa-arrow-right"></i> Use Template
+                        </button>
+                    `;
+                    container.appendChild(card);
+                    
+                    // Add to select
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = template.name;
+                    select.appendChild(option);
+                }
+            } catch(e) {
+                console.log('Failed to load templates');
+            }
+        }
+
+        async function applyTemplateById(templateId) {
+            try {
+                const res = await fetch('/api/templates');
+                const data = await res.json();
+                const template = data[templateId];
+                if (!template) {
+                    showToast('Template not found', 'error');
+                    return;
+                }
+                
+                // Apply template to bot
+                const saveRes = await fetch(`/api/bot/{{ bot.id }}/edit`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ code: template.code })
+                });
+                const result = await saveRes.json();
+                if (result.success) {
+                    showToast('Template applied successfully!', 'success');
+                    loadFiles(currentPath);
+                } else {
+                    showToast(result.error || 'Failed to apply template', 'error');
+                }
+            } catch(e) {
+                showToast('Error applying template', 'error');
+            }
+        }
+
+        async function applyTemplate() {
+            const select = document.getElementById('templateSelect');
+            const templateId = select.value;
+            if (!templateId) {
+                showToast('Please select a template', 'warning');
+                return;
+            }
+            await applyTemplateById(templateId);
+        }
+
+        // ── Environment Variables ──────────────────────────────────────
+        async function saveEnv() {
+            const content = document.getElementById('envEditor').value;
+            try {
+                const res = await fetch(`/api/bot/{{ bot.id }}/env`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ env: content })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Environment variables saved!', 'success');
+                } else {
+                    showToast(data.error || 'Failed to save', 'error');
+                }
+            } catch(e) {
+                showToast('Error saving environment variables', 'error');
+            }
+        }
+
+        // ── Init ──────────────────────────────────────────────────────────
+        async function initServerPage() {
+            await refreshServerLogs();
+            
+            setInterval(() => {
+                if (currentTab === 0 && !document.getElementById('tab-content-0').classList.contains('hidden')) {
+                    refreshServerLogs();
+                }
+            }, 2000);
+            
+            if (currentTab === 1) loadFiles();
+            if (currentTab === 3) loadStats();
+            if (currentTab === 4) loadTemplates();
+            
+            console.log('%c[BotHost] Server panel ready', 'color:#818cf8; font-weight:bold;');
+        }
+
+        // ── Keyboard Shortcuts ──────────────────────────────────────────
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                    if (!modal.classList.contains('hidden')) {
+                        modal.classList.add('hidden');
+                        modal.classList.remove('flex');
+                    }
+                });
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                if (!document.getElementById('editFileModal').classList.contains('hidden')) {
+                    e.preventDefault();
+                    saveFileContent();
+                }
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                if (currentTab === 1) {
+                    e.preventDefault();
+                    document.getElementById('fileSearch').focus();
+                    document.getElementById('fileSearch').select();
+                }
+                if (currentTab === 0) {
+                    e.preventDefault();
+                    document.getElementById('logSearch').focus();
+                    document.getElementById('logSearch').select();
+                }
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                if (currentTab === 1) {
+                    e.preventDefault();
+                    selectedFiles = fileData.map(f => f.path);
+                    updateBulkActions();
+                    renderFiles(fileData);
+                }
+            }
+        });
+        
+        window.onload = initServerPage;
+    </script>
+</body>
+</html>
