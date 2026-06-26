@@ -3,6 +3,3 @@ python-telegram-bot==20.8
 gunicorn==22.0.0
 requests==2.31.0
 pytz
-cryptography==41.0.7
-qrcode==7.4.2
-Pillow==10.1.0
